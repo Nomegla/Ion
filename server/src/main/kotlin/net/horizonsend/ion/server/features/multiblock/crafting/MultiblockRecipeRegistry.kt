@@ -1,6 +1,5 @@
 ﻿package net.horizonsend.ion.server.features.multiblock.crafting
 
-import io.papermc.paper.util.Tick
 import net.horizonsend.ion.server.core.registration.IonRegistryKey
 import net.horizonsend.ion.server.core.registration.keys.AtmosphericGasKeys
 import net.horizonsend.ion.server.core.registration.keys.CustomItemKeys
@@ -9,8 +8,8 @@ import net.horizonsend.ion.server.core.registration.keys.KeyRegistry
 import net.horizonsend.ion.server.core.registration.keys.MultiblockRecipeKeys
 import net.horizonsend.ion.server.core.registration.keys.RegistryKeys
 import net.horizonsend.ion.server.core.registration.registries.Registry
-import net.horizonsend.ion.server.features.multiblock.crafting.input.FurnaceEnviornment
-import net.horizonsend.ion.server.features.multiblock.crafting.input.RecipeEnviornment
+import net.horizonsend.ion.server.features.multiblock.crafting.input.FurnaceEnvirornment
+import net.horizonsend.ion.server.features.multiblock.crafting.input.RecipeEnvironment
 import net.horizonsend.ion.server.features.multiblock.crafting.recipe.AutoMasonRecipe
 import net.horizonsend.ion.server.features.multiblock.crafting.recipe.ChemicalProcessorRecipe
 import net.horizonsend.ion.server.features.multiblock.crafting.recipe.FurnaceMultiblockRecipe
@@ -61,7 +60,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.URANIUM),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				normalResult = ItemResult.simpleResult(CustomItemKeys.ENRICHED_URANIUM),
 			))
@@ -75,7 +74,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.URANIUM_CORE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.URANIUM_ROD),
 			))
@@ -89,7 +88,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.MaterialRequirement(Material.BEEF),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(30L),
 				ItemResult.simpleResult(CustomItemKeys.GROUND_BEEF),
 			))
@@ -103,7 +102,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.REACTIVE_PLATING),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.REACTIVE_CHASSIS),
 			))
@@ -118,7 +117,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.STEEL_PLATE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.STEEL_CHASSIS),
 			))
@@ -133,7 +132,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.FUEL_ROD_CORE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.FUEL_CELL),
 			))
@@ -148,7 +147,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.REACTIVE_ASSEMBLY),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.FABRICATED_ASSEMBLY),
 			))
@@ -163,7 +162,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.STEEL_ASSEMBLY),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.REINFORCED_FRAME),
 			))
@@ -178,7 +177,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.CHEESE_BUCKET),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofMinutes(1L),
 				ItemResult.simpleResult(CustomItemKeys.CHEESE),
 			))
@@ -192,7 +191,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.ICE_CREAM_MIXTURE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofMinutes(1L),
 				ItemResult.simpleResult(CustomItemKeys.ICE_CREAM),
 			))
@@ -206,7 +205,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.CIRCUITRY),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				ItemResult.simpleResult(CustomItemKeys.CIRCUIT_BOARD),
 			))
@@ -222,7 +221,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_SHELL),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_SHELL),
 			))
@@ -237,7 +236,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNCHARGED_SHELL),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.CHARGED_SHELL),
 			))
@@ -252,7 +251,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_BREACHER_SHELL),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_BREACHER_SHELL),
 			))
@@ -267,7 +266,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_STASIS_CHARGE),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_STASIS_CHARGE),
 			))
@@ -282,7 +281,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_ENTROPIC_CHARGE),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_ENTROPIC_CHARGE),
 			))
@@ -297,7 +296,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_HELIX_SHELL),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_HELIX_SHELL),
 			))
@@ -312,7 +311,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_SIEGE_SHELL),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_SIEGE_SHELL),
 			))
@@ -327,7 +326,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_STELLAR_PRISM),
 			fuelItem = null,
 			power = PowerRequirement(1),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LOADED_STELLAR_PRISM),
 			))
@@ -343,7 +342,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_ARSENAL_MISSILE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.ARSENAL_MISSILE),
 			))
@@ -358,7 +357,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = MaterialRequirement(Material.PORKCHOP),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofMinutes(1),
 				normalResult = ItemResult.simpleResult(CustomItemKeys.SALAMI),
 			))
@@ -372,7 +371,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.ICE_CREAM),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofMinutes(1),
 				normalResult = ItemResult.simpleResult(CustomItemKeys.ASTRONAUT_ICE_CREAM),
 			))
@@ -386,7 +385,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_LIGHT_MISSILE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.LIGHT_MISSILE),
 			))
@@ -401,7 +400,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_EMP_MISSILE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.EMP_MISSILE),
 			))
@@ -416,7 +415,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_HEAVY_MISSILE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.HEAVY_MISSILE),
 			))
@@ -431,7 +430,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = ItemRequirement.CustomItemRequirement(CustomItemKeys.UNLOADED_THERMONUCLEAR_MISSILE),
 			fuelItem = null,
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				Duration.ofSeconds(1),
 				ItemResult.simpleResult(CustomItemKeys.THERMONUCLEAR_MISSILE),
 			))
@@ -452,14 +451,14 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			smeltingItem = MaterialRequirement(Material.IRON_INGOT),
 			fuelItem = GasCanisterRequirement(AtmosphericGasKeys.OXYGEN.getValue(), 5),
 			power = PowerRequirement(10),
-			result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+			result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 				duration = Duration.ofSeconds(10),
 				normalResult = ItemResult.simpleResult(CustomItemKeys.STEEL_INGOT),
 			))
 			.updateFurnace()
 		))
 
-		val pairs: Array<Triple<IonRegistryKey<MultiblockRecipe<*>, out MultiblockRecipe<FurnaceEnviornment>>, Material, Material>> = arrayOf(
+		val pairs: Array<Triple<IonRegistryKey<MultiblockRecipe<*>, out MultiblockRecipe<FurnaceEnvirornment>>, Material, Material>> = arrayOf(
 			Triple(MultiblockRecipeKeys.COPPER_BLOCK_OXIDATION, Material.COPPER_BLOCK, Material.EXPOSED_COPPER),
 			Triple(MultiblockRecipeKeys.EXPOSED_COPPER_OXIDATION, Material.EXPOSED_COPPER, Material.WEATHERED_COPPER),
 			Triple(MultiblockRecipeKeys.WEATHERED_COPPER_OXIDATION, Material.WEATHERED_COPPER, Material.OXIDIZED_COPPER),
@@ -508,7 +507,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 				smeltingItem = MaterialRequirement(ingredient),
 				fuelItem = GasCanisterRequirement(AtmosphericGasKeys.OXYGEN.getValue(), 5),
 				power = PowerRequirement(100),
-				result = ResultHolder.of(WarmupResult<FurnaceEnviornment>(
+				result = ResultHolder.of(WarmupResult<FurnaceEnvirornment>(
 					duration = Duration.ofSeconds(10),
 					normalResult = ItemResult.simpleResult(result),
 				))
@@ -854,6 +853,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			fluidResultTwo = FluidResult("secondaryout", FluidStack(FluidTypeKeys.CARBON_DIOXIDE, 10.0)),
 			fluidResultPollutionResult = FluidResult("pollution", FluidStack(FluidTypeKeys.CARBON_DIOXIDE, 1.0)),
 			itemResult = ResultHolder.of(ItemResult.simpleResult(CustomItemKeys.CIRCUITRY.getValue().constructItemStack())),
+			0
 		))
 		register(MultiblockRecipeKeys.SABATIER_METHANE, ChemicalProcessorRecipe(
 			key = MultiblockRecipeKeys.SABATIER_METHANE,
@@ -868,10 +868,11 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			fluidResultPollutionResult = null,
 
 			itemResult = ResultHolder.of(ItemResult.simpleResult(Material.IRON_INGOT)),
+			0
 		))
 	}
 
-	fun <E: RecipeEnviornment> getRecipesFor(entity: RecipeProcessingMultiblockEntity<E>): Collection<MultiblockRecipe<E>> {
+	fun <E: RecipeEnvironment> getRecipesFor(entity: RecipeProcessingMultiblockEntity<E>): Collection<MultiblockRecipe<E>> {
 		@Suppress("UNCHECKED_CAST")
 		return byMultiblock[entity::class] as Collection<MultiblockRecipe<E>>
 	}

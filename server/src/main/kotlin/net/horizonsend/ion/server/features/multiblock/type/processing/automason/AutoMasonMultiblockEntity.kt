@@ -3,8 +3,7 @@ package net.horizonsend.ion.server.features.multiblock.type.processing.automason
 import net.horizonsend.ion.server.features.client.display.modular.DisplayHandlers
 import net.horizonsend.ion.server.features.client.display.modular.display.PowerEntityDisplayModule
 import net.horizonsend.ion.server.features.client.display.modular.display.StatusDisplayModule
-import net.horizonsend.ion.server.features.multiblock.crafting.input.AutoMasonRecipeEnviornment
-import net.horizonsend.ion.server.features.multiblock.crafting.recipe.MultiblockRecipe
+import net.horizonsend.ion.server.features.multiblock.crafting.input.AutoMasonRecipeEnvironment
 import net.horizonsend.ion.server.features.multiblock.entity.PersistentMultiblockData
 import net.horizonsend.ion.server.features.multiblock.entity.type.FurnaceBasedMultiblockEntity
 import net.horizonsend.ion.server.features.multiblock.entity.type.RecipeProcessingMultiblockEntity
@@ -31,9 +30,8 @@ class AutoMasonMultiblockEntity(data: PersistentMultiblockData, override val mul
 	world,
 	structureFace,
 	150_000
-), SyncTickingMultiblockEntity, RecipeProcessingMultiblockEntity<AutoMasonRecipeEnviornment>, StatusTickedMultiblockEntity, FurnaceBasedMultiblockEntity {
-	override var lastRecipe: MultiblockRecipe<AutoMasonRecipeEnviornment>? = null
-	override var hasTicked: Boolean = false
+), SyncTickingMultiblockEntity, RecipeProcessingMultiblockEntity<AutoMasonRecipeEnvironment>, StatusTickedMultiblockEntity, FurnaceBasedMultiblockEntity {
+	override val recipeManager: RecipeProcessingMultiblockEntity.MultiblockRecipeManager<AutoMasonRecipeEnvironment> = RecipeProcessingMultiblockEntity.MultiblockRecipeManager()
 
 	override val tickingManager: TickedMultiblockEntityParent.TickingManager = TickedMultiblockEntityParent.TickingManager(20)
 	override val statusManager: StatusMultiblockEntity.StatusManager = StatusMultiblockEntity.StatusManager()
@@ -67,11 +65,11 @@ class AutoMasonMultiblockEntity(data: PersistentMultiblockData, override val mul
 
 	fun getInputInventory(): Inventory? = multiblock.inputOffset?.let { getInventory(it.x, it.y, it.z) }
 
-	override fun buildRecipeEnviornment(): AutoMasonRecipeEnviornment? {
+	override fun buildRecipeEnvironment(): AutoMasonRecipeEnvironment? {
 		val input = getInputInventory() ?: return null
 		val output = multiblock.outputOffset?.let { getInventory(it.x, it.y, it.z) } ?: return null
 
-		return AutoMasonRecipeEnviornment(
+		return AutoMasonRecipeEnvironment(
 			multiblock = this,
 			inputInventory = input,
 			outputInventory = output,

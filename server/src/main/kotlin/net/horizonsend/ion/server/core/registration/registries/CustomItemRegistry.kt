@@ -30,11 +30,11 @@ import net.horizonsend.ion.server.features.custom.items.type.armor.PowerArmorIte
 import net.horizonsend.ion.server.features.custom.items.type.food.FoodItem
 import net.horizonsend.ion.server.features.custom.items.type.throwables.ThrowableCustomItem
 import net.horizonsend.ion.server.features.custom.items.type.throwables.ThrownCustomItem
-import net.horizonsend.ion.server.features.custom.items.type.throwables.ThrownPumpkinGrenade
 import net.horizonsend.ion.server.features.custom.items.type.throwables.thrown.ThrownDetonator
 import net.horizonsend.ion.server.features.custom.items.type.throwables.thrown.ThrownSmokeGrenade
 import net.horizonsend.ion.server.features.custom.items.type.tool.Battery
 import net.horizonsend.ion.server.features.custom.items.type.tool.CratePlacer
+import net.horizonsend.ion.server.features.custom.items.type.tool.HandheldTank
 import net.horizonsend.ion.server.features.custom.items.type.tool.PowerChainsaw
 import net.horizonsend.ion.server.features.custom.items.type.tool.PowerDrill
 import net.horizonsend.ion.server.features.custom.items.type.tool.PowerHoe
@@ -409,12 +409,14 @@ class CustomItemRegistry : Registry<CustomItem>(RegistryKeys.CUSTOM_ITEMS) {
 	}
 
 	fun registerPipes() {
-		customBlockItem(CustomItemKeys.FLUID_INPUT, "pipe/fluid_input", Component.text("Fluid Port").itemName, CustomBlockKeys.FLUID_INPUT)
+		customBlockItem(CustomItemKeys.FLUID_INPUT, "pipe/fluid_input", Component.text("Fluid Port").itemName, CustomBlockKeys.FLUID_PORT)
 		customBlockItem(CustomItemKeys.FLUID_VALVE, "pipe/fluid_valve", Component.text("Fluid Valve").itemName, CustomBlockKeys.FLUID_VALVE)
 		customBlockItem(CustomItemKeys.FLUID_PIPE, "pipe/fluid_pipe", Component.text("Fluid Pipe").itemName, CustomBlockKeys.FLUID_PIPE)
 		customBlockItem(CustomItemKeys.FLUID_PIPE_JUNCTION, "pipe/fluid_pipe_junction", Component.text("Fluid Pipe Junction").itemName, CustomBlockKeys.FLUID_PIPE_JUNCTION)
 		customBlockItem(CustomItemKeys.REINFORCED_FLUID_PIPE, "pipe/reinforced_fluid_pipe", Component.text("Reinforced Fluid Pipe").itemName, CustomBlockKeys.REINFORCED_FLUID_PIPE)
 		customBlockItem(CustomItemKeys.REINFORCED_FLUID_PIPE_JUNCTION, "pipe/reinforced_fluid_pipe_junction", Component.text("Reinforced Fluid Pipe Junction").itemName, CustomBlockKeys.REINFORCED_FLUID_PIPE_JUNCTION)
+
+		customBlockItem(CustomItemKeys.REDSTONE_CONTROL_PORT, "industry/redstone_control_port", Component.text("Redstone Control Port").itemName, CustomBlockKeys.REDSTONE_CONTROL_PORT)
 	}
 
 	private fun registerGasCanisters() {
@@ -613,6 +615,8 @@ class CustomItemRegistry : Registry<CustomItem>(RegistryKeys.CUSTOM_ITEMS) {
                 EquipmentSlot.FEET
             )
         )
+
+		register(CustomItemKeys.HANDHELD_TANK, HandheldTank)
 	}
 
 	private fun registerEnergySwords() {
@@ -632,8 +636,8 @@ class CustomItemRegistry : Registry<CustomItem>(RegistryKeys.CUSTOM_ITEMS) {
                 CustomItemKeys.ARMOR_MODIFICATION_ENVIRONMENT,
                 ItemModKeys.ENVIRONMENT,
                 "power_armor/module/environment",
-                ofChildren(Component.text("Enviornment", NamedTextColor.GRAY), Component.text(" Module", NamedTextColor.GOLD)),
-                Component.text("Allows the user to survive inhospitable planetary enviornments.")
+                ofChildren(Component.text("Environment", NamedTextColor.GRAY), Component.text(" Module", NamedTextColor.GOLD)),
+                Component.text("Allows the user to survive inhospitable planetary environments.")
             )
 		)
 		register(
@@ -642,7 +646,7 @@ class CustomItemRegistry : Registry<CustomItem>(RegistryKeys.CUSTOM_ITEMS) {
                 ItemModKeys.NIGHT_VISION,
                 "power_armor/module/night_vision",
                 ofChildren(Component.text("Night Vision", NamedTextColor.GRAY), Component.text(" Module", NamedTextColor.GOLD)),
-                Component.text("Allows the user to see in dark enviornments. ")
+                Component.text("Allows the user to see in dark environments. ")
             )
 		)
 		register(
