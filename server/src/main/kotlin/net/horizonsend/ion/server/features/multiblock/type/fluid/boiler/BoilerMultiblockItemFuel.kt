@@ -462,7 +462,6 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 		)
 		override fun tickAsync() {
 			bootstrapFluidNetwork()
-			val deltaSeconds = deltaTMS / 1000.0
 
 			/*
 			 * Explosion behavior is intentionally disabled for the initial boiler port.
@@ -484,31 +483,31 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 			 */
 
 			Tasks.sync {
-				val preTickResult = preTick(deltaSeconds)
+				val preTickResult = preTick()
 
 				Tasks.async {
 					if (!isRedstoneEnabled() || !preTickResult) {
 						setRunning(false)
-						reduceInputTemperature(deltaSeconds)
+						reduceInputTemperature()
 						return@async
 					}
 
-					heatFluid(deltaSeconds)
-					postTick(deltaSeconds)
+					heatFluid()
+					postTick()
 				}
 			}
 		}
 
-		private var burningEnds = 0L
-		private var burningOutput = 0.0
+		private var burningTicksRemaining = 0
+		private var burningOutputJoulesPerTick = 0.0
+		private var heatProducedThisUpdate = 0.0
 
-		override fun getHeatProductionJoulesPerSecond(): Double {
-			return burningOutput
+		override fun getHeatProductionJoules(): Double {
+			return heatProducedThisUpdate
 		}
 
-		override fun preTick(deltaSeconds: Double): Boolean {
-			val now = System.currentTimeMillis()
-			if (burningEnds > now) return true
+		override fun preTick(): Boolean {
+			if (burningTicksRemaining > 0) return prepareBurningUpdate()
 
 			val fuelInput = getInventory(0, -1, 0) ?: return false
 
@@ -521,20 +520,33 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 				// val pollutionStack = fuelProperties.pollutionResult.clone()
 				// if (!pollutionStorage.canAdd(pollutionStack)) continue
 
-				burningEnds = now + fuelProperties.burnDurationMillis
-				burningOutput = fuelProperties.heatOutputJoulesPerSecond
+				burningTicksRemaining = fuelProperties.burnDurationTicks
+				burningOutputJoulesPerTick = fuelProperties.heatOutputJoulesPerTick
 
 				itemStack.amount--
 
 				// pollutionStorage.addFluid(pollutionStack, location)
 
-				return true
+				return prepareBurningUpdate()
 			}
 
+			heatProducedThisUpdate = 0.0
 			return false
 		}
 
-		override fun postTick(deltaSeconds: Double) {
+		private fun prepareBurningUpdate(): Boolean {
+			val burningTicks = minOf(tickingManager.interval, burningTicksRemaining)
+			if (burningTicks <= 0) {
+				heatProducedThisUpdate = 0.0
+				return false
+			}
+
+			burningTicksRemaining -= burningTicks
+			heatProducedThisUpdate = burningOutputJoulesPerTick * burningTicks
+			return true
+		}
+
+		override fun postTick() {
 			if (!isRunning) return
 
 			displayBurningParticles()

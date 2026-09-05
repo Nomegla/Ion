@@ -2,11 +2,15 @@ package net.horizonsend.ion.server.features.transport.fluids.types
 
 import net.horizonsend.ion.common.utils.miscellaneous.testRandom
 import net.horizonsend.ion.common.utils.text.colors.HEColorScheme.Companion.HE_LIGHT_ORANGE
+import net.horizonsend.ion.server.core.registration.IonRegistryKey
+import net.horizonsend.ion.server.core.registration.keys.FluidPropertyTypeKeys
 import net.horizonsend.ion.server.core.registration.keys.FluidTypeKeys
 import net.horizonsend.ion.server.features.transport.fluids.DisplayProperties
 import net.horizonsend.ion.server.features.transport.fluids.FluidStack
 import net.horizonsend.ion.server.features.transport.fluids.FluidType
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidCategory
+import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty
+import net.horizonsend.ion.server.features.transport.fluids.properties.type.FluidPropertyType
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNetwork.Companion.PIPE_INTERIOR_PADDING
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNode
 import net.horizonsend.ion.server.miscellaneous.utils.axis
@@ -23,7 +27,18 @@ import org.bukkit.util.Vector
 import kotlin.random.Random
 
 object Lava : FluidType(FluidTypeKeys.LAVA) {
-	override val displayProperties: DisplayProperties = DisplayProperties(Color.fromRGB(Integer.parseInt("F5451D", 16)), "lava")
+	override val displayProperties: DisplayProperties =
+		DisplayProperties(Color.fromRGB(Integer.parseInt("F5451D", 16)), "lava")
+	override val defaultProperties: Map<
+		IonRegistryKey<FluidPropertyType<*>, out FluidPropertyType<*>>,
+		FluidProperty
+	> = mapOf(
+		FluidPropertyTypeKeys.FLAMMABILITY to FluidProperty.Flammability(
+			joulesPerLiter = 550_000.0,
+			resultFluid = FluidTypeKeys.POLLUTION,
+			resultVolumeMultiplier = 5.0
+		)
+	)
 	val colors = setOf(
 		displayProperties.color,
 		Color.fromRGB(Integer.parseInt("FC5C38", 16)),
@@ -58,9 +73,11 @@ object Lava : FluidType(FluidTypeKeys.LAVA) {
 				Random.nextDouble(-PIPE_INTERIOR_PADDING * 1.6, PIPE_INTERIOR_PADDING * 1.6)
 			))
 			else -> faceCenter.add(Vector(
-				(Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING) * leakingDirection.modZ) + (leakingDirection.modX * 0.05),
+				(Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING) *
+					leakingDirection.modZ) + (leakingDirection.modX * 0.05),
 				Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING / 2),
-				(Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING) * leakingDirection.modX) + (leakingDirection.modZ * 0.05)
+				(Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING) *
+					leakingDirection.modX) + (leakingDirection.modZ * 0.05)
 			))
 		}
 

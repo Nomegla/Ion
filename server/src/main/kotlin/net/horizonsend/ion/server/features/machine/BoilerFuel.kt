@@ -10,33 +10,33 @@ private fun itemStack(material: Material): ItemStack = ItemStack(material, 1)
 
 enum class BoilerFuel(
 	private val item: ItemStack,
-	val burnDurationMillis: Long,
-	val heatOutputJoulesPerSecond: Double,
+	val burnDurationTicks: Int,
+	val heatOutputJoulesPerTick: Double,
 	val pollutionResult: FluidStack
 ) {
 	COAL(
 		item = itemStack(Material.COAL),
-		burnDurationMillis = 2000,
-		heatOutputJoulesPerSecond = 4000000.0,
+		burnDurationTicks = 40,
+		heatOutputJoulesPerTick = 200_000.0,
 		pollutionResult = FluidStack(FluidTypeKeys.POLLUTION, 20.0)
 	),
 	COAL_BLOCK(
 		item = itemStack(Material.COAL_BLOCK),
-		burnDurationMillis = 18000,
-		heatOutputJoulesPerSecond = 3500000.0,
+		burnDurationTicks = 360,
+		heatOutputJoulesPerTick = 175_000.0,
 		pollutionResult = FluidStack(FluidTypeKeys.POLLUTION, 20.0)
 	),
 	// TODO: coal dust
 	DRIED_KELP_BLOCK(
 		item = itemStack(Material.DRIED_KELP_BLOCK),
-		burnDurationMillis = 250 * 9,
-		heatOutputJoulesPerSecond = 40000.0,
+		burnDurationTicks = 5 * 9,
+		heatOutputJoulesPerTick = 2_000.0,
 		pollutionResult = FluidStack(FluidTypeKeys.POLLUTION, 20.0)
 	),
 	DRIED_KELP(
 		item = itemStack(Material.DRIED_KELP),
-		burnDurationMillis = 250,
-		heatOutputJoulesPerSecond = 40000.0,
+		burnDurationTicks = 5,
+		heatOutputJoulesPerTick = 2_000.0,
 		pollutionResult = FluidStack(FluidTypeKeys.POLLUTION, 20.0)
 	);
 

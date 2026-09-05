@@ -6,6 +6,8 @@ import net.horizonsend.ion.server.features.gas.type.Gas
 import net.horizonsend.ion.server.features.transport.fluids.DisplayProperties
 import net.horizonsend.ion.server.features.transport.fluids.FluidStack
 import net.horizonsend.ion.server.features.transport.fluids.FluidType
+import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty
+import net.horizonsend.ion.server.features.transport.fluids.properties.type.FluidPropertyType
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.Component.text
 import net.kyori.adventure.text.format.NamedTextColor.GRAY
@@ -16,8 +18,12 @@ class AtmosphericGasFluid(
 	displayProperties: DisplayProperties,
 	heatCapacity: Double,
 	molarMass: Double,
-	pressureBars: Double = 1.0
-) : GasFluid(key, displayProperties, heatCapacity, molarMass, pressureBars) {
+	pressureBars: Double = 1.0,
+	defaultProperties: Map<
+		IonRegistryKey<FluidPropertyType<*>, out FluidPropertyType<*>>,
+		FluidProperty
+	> = emptyMap()
+) : GasFluid(key, displayProperties, heatCapacity, molarMass, pressureBars, defaultProperties) {
 	override fun getDisplayName(stack: FluidStack): Component {
 		return ofChildren(gas.displayName, text(" Gas", GRAY))
 	}

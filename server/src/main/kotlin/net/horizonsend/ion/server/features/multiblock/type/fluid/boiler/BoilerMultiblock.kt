@@ -94,7 +94,6 @@ abstract class BoilerMultiblock<T : BoilerMultiblockEntity> : Multiblock(), Enti
 
 		override fun tickAsync() {
 			bootstrapFluidNetwork()
-			val deltaSeconds = deltaTMS / 1000.0
 
 			/*
 			 * Explosion behavior is intentionally disabled for the initial boiler port.
@@ -115,19 +114,19 @@ abstract class BoilerMultiblock<T : BoilerMultiblockEntity> : Multiblock(), Enti
 			 * }
 			 */
 
-			if (!isRedstoneEnabled() || !preTick(deltaSeconds)) {
+			if (!isRedstoneEnabled() || !preTick()) {
 				setRunning(false)
-				reduceInputTemperature(deltaSeconds)
+				reduceInputTemperature()
 				return
 			}
 
-			heatFluid(deltaSeconds)
-			postTick(deltaSeconds)
+			heatFluid()
+			postTick()
 		}
 
-		abstract fun preTick(deltaSeconds: Double): Boolean
+		abstract fun preTick(): Boolean
 
-		fun heatFluid(deltaSeconds: Double) {
+		fun heatFluid() {
 			val input = fluidInput.getContents()
 			if (input.isEmpty()) {
 				setRunning(false)
@@ -140,7 +139,7 @@ abstract class BoilerMultiblock<T : BoilerMultiblockEntity> : Multiblock(), Enti
 			val heatingResult = input.type.getValue().getHeatingResult(
 				stack = input,
 				resultContainer = fluidOutput,
-				appliedEnergyJoules = getHeatProductionJoulesPerSecond() * deltaSeconds,
+				appliedEnergyJoules = getHeatProductionJoules(),
 				maximumTemperature = 650.0,
 				location = location
 			)
@@ -187,12 +186,12 @@ abstract class BoilerMultiblock<T : BoilerMultiblockEntity> : Multiblock(), Enti
 			fluidInput.removeAmount(result.inputRemovalAmount * acceptedFraction)
 		}
 
-		open fun postTick(deltaSeconds: Double) {}
+		open fun postTick() {}
 
 		/**
-		 * Returns the heat currently being produced, in joules
+		 * Returns the heat produced during the current boiler update, in joules.
 		 **/
-		abstract fun getHeatProductionJoulesPerSecond(): Double
+		abstract fun getHeatProductionJoules(): Double
 
 		private var startedRunning: Long? = null
 
@@ -209,12 +208,12 @@ abstract class BoilerMultiblock<T : BoilerMultiblockEntity> : Multiblock(), Enti
 			else if (startedRunning == null) startedRunning = System.currentTimeMillis()
 		}
 
-		fun reduceInputTemperature(deltaSeconds: Double) {
+		fun reduceInputTemperature() {
 			val inputStack = fluidInput.getContents()
 			if (inputStack.isEmpty()) return
 
 			val speedMultiplier = 10.0 / inputStack.amount
-			val baseRate = HEAT_LOST_PER_SECOND * deltaSeconds
+			val baseRate = HEAT_LOST_PER_TICK * tickingManager.interval
 			val adjustedRate = baseRate * speedMultiplier
 
 			val finalRate = minOf(adjustedRate, baseRate)
@@ -228,7 +227,7 @@ abstract class BoilerMultiblock<T : BoilerMultiblockEntity> : Multiblock(), Enti
 		}
 
 		companion object {
-			private const val HEAT_LOST_PER_SECOND = 100.0
+			private const val HEAT_LOST_PER_TICK = 5.0
 		}
 	}
 }

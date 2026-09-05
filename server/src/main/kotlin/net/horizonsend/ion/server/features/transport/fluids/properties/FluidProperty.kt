@@ -19,7 +19,8 @@ interface FluidProperty {
 			check(value.isFinite()) { "Temperature must be finite!" }
 		}
 
-		override val typeKey: IonRegistryKey<FluidPropertyType<*>, FluidPropertyType<Temperature>> = FluidPropertyTypeKeys.TEMPERATURE
+		override val typeKey: IonRegistryKey<FluidPropertyType<*>, FluidPropertyType<Temperature>> =
+			FluidPropertyTypeKeys.TEMPERATURE
 
 		companion object {
 			val TEMPERATURE = NamespacedKeys.key("temperature")
@@ -35,7 +36,8 @@ interface FluidProperty {
 			check(value in 0.0..1.0) { "Salinity must be between 0.0 and 1.0!" }
 		}
 
-		override val typeKey: IonRegistryKey<FluidPropertyType<*>, FluidPropertyType<Salinity>> = FluidPropertyTypeKeys.SALINITY
+		override val typeKey: IonRegistryKey<FluidPropertyType<*>, FluidPropertyType<Salinity>> =
+			FluidPropertyTypeKeys.SALINITY
 
 		companion object {
 			val SALINITY = NamespacedKeys.key("salinity")
@@ -51,11 +53,16 @@ interface FluidProperty {
 		val resultVolumeMultiplier: Double
 	) : FluidProperty {
 		init {
-			check(joulesPerLiter.isFinite() && joulesPerLiter >= 0.0) { "Joules per liter must be between positive and finite!" }
-			check(joulesPerLiter.isFinite() && joulesPerLiter >= 0.0) { "Result volume multiplier must be between positive and finite!" }
+			check(joulesPerLiter.isFinite() && joulesPerLiter >= 0.0) {
+				"Joules per liter must be between positive and finite!"
+			}
+			check(resultVolumeMultiplier.isFinite() && resultVolumeMultiplier >= 0.0) {
+				"Result volume multiplier must be between positive and finite!"
+			}
 		}
 
-		override val typeKey: IonRegistryKey<FluidPropertyType<*>, FluidPropertyType<Flammability>> = FluidPropertyTypeKeys.FLAMMABILITY
+		override val typeKey: IonRegistryKey<FluidPropertyType<*>, FluidPropertyType<Flammability>> =
+			FluidPropertyTypeKeys.FLAMMABILITY
 
 		override fun clone(): Flammability = copy()
 

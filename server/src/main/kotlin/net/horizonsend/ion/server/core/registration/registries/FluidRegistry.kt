@@ -2,6 +2,7 @@ package net.horizonsend.ion.server.core.registration.registries
 
 import net.horizonsend.ion.common.utils.text.colors.HEColorScheme.Companion.HE_LIGHT_BLUE
 import net.horizonsend.ion.server.core.registration.keys.AtmosphericGasKeys
+import net.horizonsend.ion.server.core.registration.keys.FluidPropertyTypeKeys
 import net.horizonsend.ion.server.core.registration.keys.FluidTypeKeys
 import net.horizonsend.ion.server.core.registration.keys.KeyRegistry
 import net.horizonsend.ion.server.core.registration.keys.RegistryKeys
@@ -9,6 +10,7 @@ import net.horizonsend.ion.server.features.transport.fluids.DisplayProperties
 import net.horizonsend.ion.server.features.transport.fluids.FluidStack
 import net.horizonsend.ion.server.features.transport.fluids.FluidType
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidCategory
+import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty
 import net.horizonsend.ion.server.features.transport.fluids.types.AtmosphericGasFluid
 import net.horizonsend.ion.server.features.transport.fluids.types.GasFluid
 import net.horizonsend.ion.server.features.transport.fluids.types.Lava
@@ -46,7 +48,14 @@ class FluidTypeRegistry : Registry<FluidType>(RegistryKeys.FLUID_TYPE) {
 			AtmosphericGasKeys.HYDROGEN,
 			DisplayProperties(Color.fromRGB(103, 145, 145), "transparent_gas"),
 			heatCapacity = 14.300,
-			molarMass = 2.01568
+			molarMass = 2.01568,
+			defaultProperties = mapOf(
+				FluidPropertyTypeKeys.FLAMMABILITY to FluidProperty.Flammability(
+					joulesPerLiter = 176_000.0,
+					resultFluid = FluidTypeKeys.POLLUTION,
+					resultVolumeMultiplier = 5.0
+				)
+			)
 		))
 		register(FluidTypeKeys.XENON, AtmosphericGasFluid(
 			FluidTypeKeys.XENON,
@@ -67,7 +76,14 @@ class FluidTypeRegistry : Registry<FluidType>(RegistryKeys.FLUID_TYPE) {
 			AtmosphericGasKeys.METHANE,
 			DisplayProperties(Color.fromRGB(107, 107, 158), "transparent_gas"),
 			heatCapacity = 2.191,
-			molarMass = 16.04
+			molarMass = 16.04,
+			defaultProperties = mapOf(
+				FluidPropertyTypeKeys.FLAMMABILITY to FluidProperty.Flammability(
+					joulesPerLiter = 264_000.0,
+					resultFluid = FluidTypeKeys.POLLUTION,
+					resultVolumeMultiplier = 5.0
+				)
+			)
 		))
 		register(FluidTypeKeys.OXYGEN, AtmosphericGasFluid(
 			FluidTypeKeys.OXYGEN,

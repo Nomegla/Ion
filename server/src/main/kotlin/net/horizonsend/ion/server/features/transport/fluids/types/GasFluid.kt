@@ -8,6 +8,8 @@ import net.horizonsend.ion.server.features.transport.fluids.FluidStack
 import net.horizonsend.ion.server.features.transport.fluids.FluidType
 import net.horizonsend.ion.server.features.transport.fluids.FluidUtils.GAS_CONSTANT
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidCategory
+import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty
+import net.horizonsend.ion.server.features.transport.fluids.properties.type.FluidPropertyType
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNetwork.Companion.PIPE_INTERIOR_PADDING
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNode
 import net.horizonsend.ion.server.features.world.IonWorld.Companion.ion
@@ -30,7 +32,11 @@ abstract class GasFluid(
 	override val displayProperties: DisplayProperties,
 	private val heatCapacity: Double,
 	private val molarMass: Double,
-	val pressureBars: Double = 1.0
+	val pressureBars: Double = 1.0,
+	override val defaultProperties: Map<
+		IonRegistryKey<FluidPropertyType<*>, out FluidPropertyType<*>>,
+		FluidProperty
+	> = emptyMap()
 ) : FluidType(key) {
 	override val categories: Array<FluidCategory> = arrayOf(FluidCategory.GAS)
 
