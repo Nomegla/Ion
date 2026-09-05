@@ -34,6 +34,7 @@ import net.horizonsend.ion.server.features.multiblock.type.fluid.PumpMultiblock
 import net.horizonsend.ion.server.features.multiblock.type.fluid.boiler.BoilerMultiblockItemFuel
 import net.horizonsend.ion.server.features.multiblock.type.fluid.collector.CanisterGasCollectorMultiblock
 import net.horizonsend.ion.server.features.multiblock.type.fluid.storage.BasicFluidStorageTankMultiblock
+import net.horizonsend.ion.server.features.multiblock.type.fluid.turbine.SteamTurbineMultiblock
 import net.horizonsend.ion.server.features.multiblock.type.industry.CentrifugeMultiblock
 import net.horizonsend.ion.server.features.multiblock.type.industry.CircuitfabMultiblock
 import net.horizonsend.ion.server.features.multiblock.type.industry.CompressorMultiblock
@@ -529,6 +530,7 @@ object MultiblockRegistration : IonServerComponent() {
 
 		registerMultiblock(BoilerMultiblockItemFuel)
 		registerMultiblock(BoilerMultiblockItemFuel, "ItemCombustionBoilerMultiblock")
+		registerMultiblock(SteamTurbineMultiblock)
 	}
 
 	private fun sortMultiblocks() {

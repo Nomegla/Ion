@@ -113,12 +113,12 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 			}
 			y(4) {
 				x(-1).titaniumBlock()
-				x(0).type(Material.WAXED_COPPER_GRATE)
+				x(0).anyCopperGrate()
 				x(1).titaniumBlock()
 			}
 			y(5) {
 				x(-1).titaniumBlock()
-				x(0).type(Material.WAXED_COPPER_GRATE)
+				x(0).anyCopperGrate()
 				x(1).titaniumBlock()
 			}
 			y(6) {
@@ -217,12 +217,12 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 				x(2).titaniumBlock()
 			}
 			y(4) {
-				x(-2).type(Material.WAXED_COPPER_GRATE)
-				x(2).type(Material.WAXED_COPPER_GRATE)
+				x(-2).anyCopperGrate()
+				x(2).anyCopperGrate()
 			}
 			y(5) {
-				x(-2).type(Material.WAXED_COPPER_GRATE)
-				x(2).type(Material.WAXED_COPPER_GRATE)
+				x(-2).anyCopperGrate()
+				x(2).anyCopperGrate()
 			}
 			y(6) {
 				x(-2).titaniumBlock()
@@ -331,12 +331,12 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 			}
 			y(4) {
 				x(-1).titaniumBlock()
-				x(0).type(Material.WAXED_COPPER_GRATE)
+				x(0).anyCopperGrate()
 				x(1).titaniumBlock()
 			}
 			y(5) {
 				x(-1).titaniumBlock()
-				x(0).type(Material.WAXED_COPPER_GRATE)
+				x(0).anyCopperGrate()
 				x(1).titaniumBlock()
 			}
 			y(6) {
