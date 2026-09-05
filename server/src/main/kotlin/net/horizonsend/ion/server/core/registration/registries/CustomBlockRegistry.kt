@@ -448,6 +448,18 @@ class CustomBlockRegistry : Registry<CustomBlock>(RegistryKeys.CUSTOM_BLOCKS) {
 
 		register(CustomBlockKeys.REINFORCED_FLUID_PIPE, ReinforcedFluidPipeBlock)
 		register(CustomBlockKeys.REINFORCED_FLUID_PIPE_JUNCTION, ReinforcedFluidPipeJunctionBlock)
+
+		register(CustomBlockKeys.REFRACTORY_BRICKS, CustomBlock(
+			key = CustomBlockKeys.REFRACTORY_BRICKS,
+			blockData = mushroomBlockData(
+				setOf(BlockFace.WEST, BlockFace.SOUTH, BlockFace.EAST, BlockFace.UP, BlockFace.DOWN)
+			),
+			drops = BlockLoot(
+				requiredTool = null,
+				drops = customItemDrop(CustomItemKeys.REFRACTORY_BRICKS)
+			),
+			CustomItemKeys.REFRACTORY_BRICKS
+		))
 	}
 
 	override fun registerAdditional(key: IonRegistryKey<CustomBlock, *>, value: CustomBlock) {

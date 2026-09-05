@@ -1,18 +1,26 @@
 package net.horizonsend.ion.server.features.transport.fluids.types
 
+import net.horizonsend.ion.server.core.registration.keys.FluidPropertyTypeKeys
 import net.horizonsend.ion.server.core.registration.keys.FluidTypeKeys
+import net.horizonsend.ion.server.features.multiblock.entity.type.fluids.storage.FluidStorageContainer
 import net.horizonsend.ion.server.features.transport.fluids.DisplayProperties
 import net.horizonsend.ion.server.features.transport.fluids.FluidStack
 import net.horizonsend.ion.server.features.transport.fluids.FluidType
+import net.horizonsend.ion.server.features.transport.fluids.FluidType.HeatingResult.Companion.HEATING_RATE_MULTIPLIER
+import net.horizonsend.ion.server.features.transport.fluids.FluidUtils
+import net.horizonsend.ion.server.features.transport.fluids.FluidUtils.getFluidWeight
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidCategory
+import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNetwork.Companion.PIPE_INTERIOR_PADDING
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNode
 import net.horizonsend.ion.server.miscellaneous.utils.axis
+import net.horizonsend.ion.server.miscellaneous.utils.centimetersCubedToLiters
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.Component.text
 import net.kyori.adventure.text.format.NamedTextColor.BLUE
 import org.bukkit.Axis
 import org.bukkit.Color
+import org.bukkit.Location
 import org.bukkit.Particle
 import org.bukkit.Particle.Trail
 import org.bukkit.World
@@ -21,12 +29,8 @@ import org.bukkit.util.Vector
 import kotlin.random.Random
 
 object Water : FluidType(FluidTypeKeys.WATER) {
-	override val categories: Array<FluidCategory> = arrayOf()
 	override val displayProperties: DisplayProperties = DisplayProperties(Color.fromRGB(63, 118, 228), "transparent_liquid")
-
-	override fun getDisplayName(stack: FluidStack): Component {
-		return text("Water", BLUE)
-	}
+	override val categories: Array<FluidCategory> = arrayOf()
 
 	override fun displayInPipe(world: World, origin: Vector, destination: Vector) {
 		val trailOptions = Trail(
@@ -56,4 +60,66 @@ object Water : FluidType(FluidTypeKeys.WATER) {
 
 		world.spawnParticle(Particle.FALLING_WATER, faceCenter, 1, 0.0, 0.0, 0.0)
 	}
+
+	override fun getDisplayName(stack: FluidStack): Component {
+		return text("Water", BLUE)
+	}
+
+	override fun getIsobaricHeatCapacity(stack: FluidStack): Double {
+		return 4.181
+	}
+
+	override fun getMolarMass(): Double {
+		return 18.01528
+	}
+
+	override fun getDensity(stack: FluidStack, location: Location?): Double {
+		return 1.0
+	}
+
+	override fun getHeatingResult(
+		stack: FluidStack,
+		resultContainer: FluidStorageContainer,
+		appliedEnergyJoules: Double,
+		maximumTemperature: Double,
+		location: Location?
+	): HeatingResult {
+		val currentTemperature = stack.getDataOrDefault(FluidPropertyTypeKeys.TEMPERATURE, location).value
+
+		val effectiveEnergyJoules = appliedEnergyJoules * HEATING_RATE_MULTIPLIER
+		val newTemperature = FluidUtils.getNewTemperature(stack, effectiveEnergyJoules, maximumTemperature, location)
+		val boilingPoint = getBoilingPoint(stack, location)
+
+		if (newTemperature.value < boilingPoint) {
+			return HeatingResult.TemperatureIncreaseInPlace(newTemperature)
+		}
+
+		val boilingTemperature = FluidProperty.Temperature(100.0)
+
+		val deltaTemperature = maxOf(boilingPoint - currentTemperature, 0.0)
+		val heatingJoules = getFluidWeight(stack, location) * getIsobaricHeatCapacity(stack) * deltaTemperature
+
+		val spareJoules = maxOf(effectiveEnergyJoules - heatingJoules, 0.0)
+		val boiledGrams = spareJoules / LATENT_HEAT_OF_VAPORIZATION
+
+		val waterVolume = centimetersCubedToLiters(boiledGrams / this.getDensity(stack, location))
+
+		// Consume no more water than the stack contains.
+		val consumed = minOf(waterVolume, stack.amount)
+		val steamVolume = consumed * EXPANSION_FACTOR
+
+		val steamStack = FluidStack(FluidTypeKeys.DENSE_STEAM, steamVolume)
+			.setData(FluidPropertyTypeKeys.TEMPERATURE, boilingTemperature.clone())
+
+		return HeatingResult.Boiling(boilingTemperature, steamStack, consumed)
+	}
+
+	private fun getBoilingPoint(stack: FluidStack, location: Location?): Double {
+		// TODO get planetary pressure, check indoors?
+//		val pressure = stack.getDataOrDefault(FluidPropertyTypeKeys.PRESSURE.getValue(), location).value
+		return 100.0
+	}
+
+	private const val EXPANSION_FACTOR = 12.0
+	private const val LATENT_HEAT_OF_VAPORIZATION = 2257.0 // j/g
 }

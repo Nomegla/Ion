@@ -22,7 +22,7 @@ object TemperatureProperty : FluidPropertyType<Temperature>() {
 
 		val newVolume = currentAmount + otherAmount
 
-		if (newVolume <= 0.0) return Temperature(DEFAULT_TEMPERATURE)
+		if (newVolume <= 0.0) return getDefaultProperty(location)
 
 		val thisPortion = currentProperty.value * (currentAmount / newVolume)
 		val otherPortion = (other?.value ?: getDefaultProperty(location).value) * (otherAmount / newVolume)
@@ -43,11 +43,16 @@ object TemperatureProperty : FluidPropertyType<Temperature>() {
 	}
 
 	override fun getDefaultProperty(location: Location?): Temperature {
-		return Temperature(0.0)
+		// TODO: derive ambient temperature from the location.
+		return Temperature(DEFAULT_TEMPERATURE)
 	}
 
 	override fun formatValue(property: Temperature): Component {
-		return ofChildren(Component.text(property.value.roundToHundredth()), Component.space(), Component.text("C", HE_MEDIUM_GRAY))
+		return ofChildren(
+			Component.text(property.value.roundToHundredth()),
+			Component.space(),
+			Component.text("°C", HE_MEDIUM_GRAY)
+		)
 	}
 
 	override fun getDisplayName(): Component {

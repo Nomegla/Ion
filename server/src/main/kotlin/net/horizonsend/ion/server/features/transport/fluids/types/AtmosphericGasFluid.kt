@@ -13,8 +13,11 @@ import net.kyori.adventure.text.format.NamedTextColor.GRAY
 class AtmosphericGasFluid(
 	key: IonRegistryKey<FluidType, out FluidType>,
 	private val gasKey: IonRegistryKey<Gas, out Gas>,
-	displayProperties: DisplayProperties
-) : GasFluid(key, displayProperties) {
+	displayProperties: DisplayProperties,
+	heatCapacity: Double,
+	molarMass: Double,
+	pressureBars: Double = 1.0
+) : GasFluid(key, displayProperties, heatCapacity, molarMass, pressureBars) {
 	override fun getDisplayName(stack: FluidStack): Component {
 		return ofChildren(gas.displayName, text(" Gas", GRAY))
 	}

@@ -4,10 +4,14 @@ import net.horizonsend.ion.common.utils.text.bracketed
 import net.horizonsend.ion.common.utils.text.colors.HEColorScheme.Companion.HE_DARK_GRAY
 import net.horizonsend.ion.common.utils.text.colors.HEColorScheme.Companion.HE_MEDIUM_GRAY
 import net.horizonsend.ion.common.utils.text.ofChildren
+import net.horizonsend.ion.server.core.registration.keys.FluidPropertyTypeKeys
 import net.horizonsend.ion.server.features.client.display.modular.display.fluid.FluidDisplayModule.Companion.format
+import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty.Temperature
+import net.horizonsend.ion.server.miscellaneous.utils.litersToCentimetersCubed
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.Component.text
 import net.kyori.adventure.text.format.NamedTextColor
+import org.bukkit.Location
 
 object FluidUtils {
 	const val GAS_CONSTANT = 0.08206
@@ -35,5 +39,25 @@ object FluidUtils {
 		}
 
 		return built
+	}
+
+	/** Returns the mass of this fluid stack, in grams. */
+	fun getFluidWeight(fluid: FluidStack, location: Location?): Double {
+		val density = fluid.type.getValue().getDensity(fluid, location)
+		return density * litersToCentimetersCubed(fluid.amount)
+	}
+
+	fun getNewTemperature(
+		fluidStack: FluidStack,
+		appliedHeatJoules: Double,
+		maximumTemperature: Double,
+		location: Location?
+	): Temperature {
+		val currentHeat = fluidStack.getDataOrDefault(FluidPropertyTypeKeys.TEMPERATURE, location).value
+		val fluidWeightGrams = getFluidWeight(fluidStack, location)
+		val specificHeat = fluidStack.type.getValue().getIsobaricHeatCapacity(fluidStack)
+		val temperatureChange = appliedHeatJoules / (specificHeat * fluidWeightGrams)
+
+		return Temperature(minOf(currentHeat + temperatureChange, maximumTemperature))
 	}
 }

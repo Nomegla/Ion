@@ -1,17 +1,22 @@
 package net.horizonsend.ion.server.features.transport.fluids.types
 
 import net.horizonsend.ion.server.core.registration.IonRegistryKey
+import net.horizonsend.ion.server.core.registration.keys.FluidPropertyTypeKeys
 import net.horizonsend.ion.server.core.registration.keys.FluidTypeKeys
 import net.horizonsend.ion.server.features.transport.fluids.DisplayProperties
+import net.horizonsend.ion.server.features.transport.fluids.FluidStack
 import net.horizonsend.ion.server.features.transport.fluids.FluidType
+import net.horizonsend.ion.server.features.transport.fluids.FluidUtils.GAS_CONSTANT
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidCategory
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNetwork.Companion.PIPE_INTERIOR_PADDING
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNode
 import net.horizonsend.ion.server.features.world.IonWorld.Companion.ion
+import net.horizonsend.ion.server.miscellaneous.utils.celsiusToKelvin
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.Vec3i
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getRelative
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
 import net.horizonsend.ion.server.miscellaneous.utils.getBlockIfLoaded
+import org.bukkit.Location
 import org.bukkit.Particle
 import org.bukkit.Particle.Trail
 import org.bukkit.World
@@ -22,7 +27,10 @@ import kotlin.random.Random
 
 abstract class GasFluid(
 	key: IonRegistryKey<FluidType, out FluidType>,
-	override val displayProperties: DisplayProperties
+	override val displayProperties: DisplayProperties,
+	private val heatCapacity: Double,
+	private val molarMass: Double,
+	val pressureBars: Double = 1.0
 ) : FluidType(key) {
 	override val categories: Array<FluidCategory> = arrayOf(FluidCategory.GAS)
 
@@ -41,7 +49,10 @@ abstract class GasFluid(
 	override fun playLeakEffects(world: World, leakingNode: FluidNode, leakingDirection: BlockFace) {
 		val openLocation = getRelative(leakingNode.location, leakingDirection)
 
-		val smokeLocation = toVec3i(openLocation).toCenterVector().toLocation(world).add(leakingDirection.direction.multiply(-0.5))
+		val smokeLocation = toVec3i(openLocation)
+			.toCenterVector()
+			.toLocation(world)
+			.add(leakingDirection.direction.multiply(-0.5))
 
 		val offset = Vector(
 			Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
@@ -51,7 +62,15 @@ abstract class GasFluid(
 
 		val start = smokeLocation.clone().add(offset)
 
-		val destination = start.clone().add(offset).add(leakingDirection.direction.multiply(5 * plumeMultiplier)).add(world.ion.environmentManager.weatherManager.getWindVector(world, smokeLocation.x, smokeLocation.y, smokeLocation.z))
+		val destination = start.clone()
+			.add(offset)
+			.add(leakingDirection.direction.multiply(5 * plumeMultiplier))
+			.add(world.ion.environmentManager.weatherManager.getWindVector(
+				world,
+				smokeLocation.x,
+				smokeLocation.y,
+				smokeLocation.z
+			))
 
 		val trial = Trail(
 			/* target = */ destination,
@@ -78,5 +97,24 @@ abstract class GasFluid(
 //				cloud.basePotionType = PotionType.STRONG_POISON
 //			}
 //		}
+	}
+
+	override fun getIsobaricHeatCapacity(stack: FluidStack): Double {
+		return heatCapacity
+	}
+
+	override fun getMolarMass(): Double {
+		return molarMass
+	}
+
+	override fun getDensity(stack: FluidStack, location: Location?): Double {
+		val temperatureCelsius = stack
+			.getDataOrDefault(FluidPropertyTypeKeys.TEMPERATURE.getValue(), location)
+			.value
+
+		val densityGramsPerLiter =
+			(getMolarMass() * pressureBars) / (GAS_CONSTANT * celsiusToKelvin(temperatureCelsius))
+
+		return densityGramsPerLiter / 1000.0
 	}
 }

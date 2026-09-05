@@ -297,6 +297,10 @@ object CustomItemKeys : KeyRegistry<CustomItem>(RegistryKeys.CUSTOM_ITEMS, Custo
 	val REINFORCED_FLUID_PIPE_JUNCTION = registerTypedKey<CustomBlockItem>("REINFORCED_FLUID_PIPE_JUNCTION")
 	val REDSTONE_CONTROL_PORT = registerTypedKey<CustomBlockItem>("REDSTONE_CONTROL_PORT")
 
+	val REFRACTORY_BRICK = registerKey("REFRACTORY_BRICK")
+	val REFRACTORY_MIX = registerKey("REFRACTORY_MIX")
+	val REFRACTORY_BRICKS = registerTypedKey<CustomBlockItem>("REFRACTORY_BRICKS")
+
 	val HORIZON_FRIED_EGG = registerTypedKey<FoodItem>("HORIZON_FRIED_EGG")
 	val TOMATO = registerTypedKey<FoodItem>("TOMATO")
 	val LETTUCE = registerTypedKey<FoodItem>("LETTUCE")

@@ -673,5 +673,7 @@ class MultiblockShape {
 			CustomBlockKeys.FLUID_VALVE,
 			alias = "any fluid pipe",
 		) { setExample(CustomBlockKeys.FLUID_PIPE.getValue().blockData) }
+
+		fun refractoryBricks() = customBlock(CustomBlockKeys.REFRACTORY_BRICKS.getValue())
 	}
 }

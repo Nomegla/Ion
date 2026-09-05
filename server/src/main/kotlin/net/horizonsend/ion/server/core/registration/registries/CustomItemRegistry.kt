@@ -367,6 +367,23 @@ class CustomItemRegistry : Registry<CustomItem>(RegistryKeys.CUSTOM_ITEMS) {
 		stackable(key = CustomItemKeys.ACTIVATED_ARSENAL_MISSILE, model = "projectile/activated_arsenal_missile", displayName = Component.text("Activated Arsenal Missile", NamedTextColor.RED))
 
 		register(CustomItemKeys.PROGRESS_HOLDER, ProgressHolder)
+
+		customBlockItem(
+			CustomItemKeys.REFRACTORY_BRICKS,
+			"industry/refractory_bricks",
+			Component.text("Refractory Bricks").itemName,
+			CustomBlockKeys.REFRACTORY_BRICKS
+		)
+		stackable(
+			CustomItemKeys.REFRACTORY_BRICK,
+			Component.text("Refractory Brick").itemName,
+			"industry/refractory_brick"
+		)
+		stackable(
+			CustomItemKeys.REFRACTORY_MIX,
+			Component.text("Refractory Mix").itemName,
+			"industry/refractory_mix"
+		)
 	}
 
 	private fun registerShipCores() {

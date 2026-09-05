@@ -14,6 +14,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.Component.text
 import org.bukkit.Axis
 import org.bukkit.Color
+import org.bukkit.Location
 import org.bukkit.Particle
 import org.bukkit.Particle.Trail
 import org.bukkit.World
@@ -22,7 +23,6 @@ import org.bukkit.util.Vector
 import kotlin.random.Random
 
 object Lava : FluidType(FluidTypeKeys.LAVA) {
-	override val categories: Array<FluidCategory> = arrayOf()
 	override val displayProperties: DisplayProperties = DisplayProperties(Color.fromRGB(Integer.parseInt("F5451D", 16)), "lava")
 	val colors = setOf(
 		displayProperties.color,
@@ -30,17 +30,13 @@ object Lava : FluidType(FluidTypeKeys.LAVA) {
 		Color.fromRGB(Integer.parseInt("DE2E07", 16))
 	)
 
+	override val categories: Array<FluidCategory> = arrayOf()
+
 	override fun getDisplayName(stack: FluidStack): Component {
 		return text("Lava", HE_LIGHT_ORANGE)
 	}
 
 	override fun displayInPipe(world: World, origin: Vector, destination: Vector) {
-		val colors = setOf(
-			Color.fromRGB(Integer.parseInt("F5451D", 16)),
-			Color.fromRGB(Integer.parseInt("FC5C38", 16)),
-			Color.fromRGB(Integer.parseInt("DE2E07", 16))
-		)
-
 		val trailOptions = Trail(
 			/* target = */ destination.toLocation(world),
 			/* color = */ colors.random(),
@@ -69,5 +65,17 @@ object Lava : FluidType(FluidTypeKeys.LAVA) {
 		}
 
 		world.spawnParticle(Particle.FALLING_LAVA, faceCenter, 1, 0.0, 0.0, 0.0)
+	}
+
+	override fun getIsobaricHeatCapacity(stack: FluidStack): Double {
+		return 0.84
+	}
+
+	override fun getMolarMass(): Double {
+		return 216.549
+	}
+
+	override fun getDensity(stack: FluidStack, location: Location?): Double {
+		return 2.9
 	}
 }

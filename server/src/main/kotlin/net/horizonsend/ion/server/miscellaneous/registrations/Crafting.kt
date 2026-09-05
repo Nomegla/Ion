@@ -5,6 +5,7 @@ import io.papermc.paper.datacomponent.item.ItemEnchantments
 import net.horizonsend.ion.server.IonServer
 import net.horizonsend.ion.server.core.IonServerComponent
 import net.horizonsend.ion.server.core.registration.IonRegistryKey
+import net.horizonsend.ion.server.core.registration.keys.CustomItemKeys
 import net.horizonsend.ion.server.core.registration.keys.CustomItemKeys.SCORDITE_BLOCK
 import net.horizonsend.ion.server.core.registration.keys.CustomItemKeys.ADVANCED_ITEM_EXTRACTOR
 import net.horizonsend.ion.server.core.registration.keys.CustomItemKeys.ALUMINUM_BLOCK
@@ -329,6 +330,7 @@ object Crafting : IonServerComponent() {
 		registerFoodFurnaceRecipes()
 		registerTools()
 		registerMisc()
+		registerIndustry()
 
 		// Prismarine Bricks
 		val primarineBricksFurnaceRecipe = FurnaceRecipe(
@@ -1327,6 +1329,34 @@ object Crafting : IonServerComponent() {
 		blackDyeRecipe.category = CookingBookCategory.MISC
 		Bukkit.addRecipe(blackDyeRecipe)
 		listOfCustomRecipes.add(blackDyeRecipe.key)
+	}
+
+	private fun registerIndustry() {
+		shapeless(
+			name = "refractory_mix",
+			result = CustomItemKeys.REFRACTORY_MIX.getValue().constructItemStack(),
+			category = CraftingBookCategory.MISC,
+			ItemStack(Material.CLAY_BALL),
+			RAW_ALUMINUM.getValue().constructItemStack()
+		)
+
+		val refractoryBrickRecipe = FurnaceRecipe(
+			NamespacedKeys.key("refractory_brick"),
+			CustomItemKeys.REFRACTORY_BRICK.getValue().constructItemStack(),
+			RecipeChoice.ExactChoice(CustomItemKeys.REFRACTORY_MIX.getValue().constructItemStack()),
+			1f,
+			200
+		)
+		refractoryBrickRecipe.category = CookingBookCategory.BLOCKS
+		Bukkit.addRecipe(refractoryBrickRecipe)
+		listOfCustomRecipes.add(refractoryBrickRecipe.key)
+
+		shapeless(
+			name = "refractory_bricks",
+			result = CustomItemKeys.REFRACTORY_BRICKS.getValue().constructItemStack(),
+			category = CraftingBookCategory.BUILDING,
+			CustomItemKeys.REFRACTORY_BRICK.getValue().constructItemStack(9)
+		)
 	}
 
 	// Different names due to signature problems from type erasure
