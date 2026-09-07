@@ -556,6 +556,19 @@ class CustomBlockRegistry : Registry<CustomBlock>(RegistryKeys.CUSTOM_BLOCKS) {
 					val newFace = rotateBlockFace(face, rotation)
 					customBlock.faceData[newFace]!!.nms
 				}
+				is OrientableCustomBlock -> {
+					val axis = customBlock.getAxis(blockState)
+					val newAxis = when (rotation) {
+						Rotation.CLOCKWISE_90, Rotation.COUNTERCLOCKWISE_90 -> when (axis) {
+							Axis.X -> Axis.Z
+							Axis.Z -> Axis.X
+							Axis.Y -> Axis.Y
+						}
+						else -> axis
+					}
+
+					customBlock.axisData[newAxis]!!.nms
+				}
 				else -> blockState
 			}
 		}
