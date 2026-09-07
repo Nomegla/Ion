@@ -96,6 +96,13 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 
 			// Determine the direction and capacity for flow through the network
 			edmondsKarp()
+
+			getGraphEdges().forEach {
+				(it as FluidGraphEdge)
+				if (it.netFlow == 0.0) return@forEach
+				if (getFlow(it.nodeOne.location) > 0) return@forEach
+				it.netFlow = maxOf(it.netFlow - 5, 0.0)
+			}
 		}
 
 		val volume = getVolume()
@@ -290,6 +297,26 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 			)
 
 			if (node.location in outputs.keys) continue
+
+			/*
+			val edges = getGraph().outEdges(node).filterIsInstance<FluidGraphEdge>()
+
+			val childDirection: BlockFace = when (edges.size) {
+				0 -> BlockFace.SELF
+				1 -> edges.first().direction
+				else -> {
+					val maxEdge = getGraph().outEdges(node)
+						.maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue // Cast shouldn't matter but handle the case anyways
+
+					maxEdge.direction
+				}
+			}
+
+			val edge = getGraph().outEdges(node)
+				.maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue // Cast shouldn't matter but handle the case anyways
+
+			var childDirection = edge.direction
+			* */
 
 			val edge = getGraph().outEdges(node).maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue
 
