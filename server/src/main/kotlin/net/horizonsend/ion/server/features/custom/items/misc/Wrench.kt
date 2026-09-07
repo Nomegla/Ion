@@ -34,6 +34,7 @@ import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidGr
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNetwork
 import net.horizonsend.ion.server.features.world.IonWorld.Companion.ion
 import net.horizonsend.ion.server.miscellaneous.utils.Tasks
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.BlockKey
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getRelative
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toBlockKey
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
@@ -133,8 +134,7 @@ object Wrench : CustomItem(
 
 		val key = toBlockKey(targeted.x, targeted.y, targeted.z)
 
-		val network = player.world.ion.transportManager.fluidGraphManager.getByLocation(key) ?: return@async removeEntity(player)
-		network as FluidNetwork
+		val (network, localKey) = getFluidNetwork(player, key) ?: return@async removeEntity(player)
 
 		val fluid = network.networkContents
 
@@ -144,22 +144,27 @@ object Wrench : CustomItem(
 			text(" • ", HE_MEDIUM_GRAY),
 			text("Flow Rate"),
 			text(": ", HE_DARK_GRAY),
-			text(network.getFlow(key).roundToHundredth()), text(" L/s", HE_MEDIUM_GRAY)
+			text(network.getFlow(localKey).roundToHundredth()), text(" L/s", HE_MEDIUM_GRAY)
 		)
 
 		@Suppress("OverrideOnly")
 		if (debugAudience.audiences().contains(player)) {
-			network.getNode(key)?.let {
+			val holder = network.manager.transportManager
+
+			network.getNode(localKey)?.let {
 				@Suppress("UnstableApiUsage")
 				for (edge in network.getGraph().outEdges(it).filterIsInstance<FluidGraphEdge>()) {
-					val centerLocAdj = toVec3i(getRelative(key, edge.direction)).toCenterVector().toLocation(player.world).add(0.0, 0.75, 0.0)
+					val adjacent = getRelative(localKey, edge.direction)
+					val globalAdjacent = holder.getGlobalCoordinate(toVec3i(adjacent))
+					val displayLocation = globalAdjacent.toCenterVector().toLocation(player.world).add(0.0, 0.75, 0.0)
+					val globalDirection = holder.getGlobalDirection(edge.direction)
 
 					val text = template(ofChildren(
 						text("{0}"), newline(),
 						text("{1} L/s")
-					), useQuotesAroundObjects = false, edge.direction, edge.netFlow)
+					), useQuotesAroundObjects = false, globalDirection, edge.netFlow)
 
-					player.sendText(centerLocAdj, text, WRENCH_DISPLAY_TICK_INTERVAL.toLong() + 1)
+					player.sendText(displayLocation, text, WRENCH_DISPLAY_TICK_INTERVAL.toLong() + 1)
 				}
 			}
 		}
@@ -178,8 +183,16 @@ object Wrench : CustomItem(
 			val targeted = hitResult?.hitBlock ?: return@async2 removeEntity(player)
 			val key = toBlockKey(targeted.x, targeted.y, targeted.z)
 
-			if (player.world.ion.transportManager.fluidGraphManager.getByLocation(key) == null) return@async2 removeEntity(player)
+			if (getFluidNetwork(player, key) == null) return@async2 removeEntity(player)
 		}
+	}
+
+	private fun getFluidNetwork(player: Player, globalPosition: BlockKey): Pair<FluidNetwork, BlockKey>? {
+		val manager = player.world.ion.transportManager.getFluidManager(globalPosition)
+		val localPosition = toBlockKey(manager.transportManager.getLocalCoordinate(toVec3i(globalPosition)))
+		val network = manager.getByLocation(localPosition) as? FluidNetwork ?: return null
+
+		return network to localPosition
 	}
 
 	fun removeEntity(player: Player) {
