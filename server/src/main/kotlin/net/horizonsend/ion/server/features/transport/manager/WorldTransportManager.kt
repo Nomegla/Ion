@@ -6,13 +6,17 @@ import net.horizonsend.ion.server.features.transport.NewTransport.registerTransp
 import net.horizonsend.ion.server.features.transport.inputs.IOManager
 import net.horizonsend.ion.server.features.transport.manager.graph.FluidNetworkManager
 import net.horizonsend.ion.server.features.world.IonWorld
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.BlockKey
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.Vec3i
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toBlockKey
 import org.bukkit.World
 import org.bukkit.persistence.PersistentDataContainer
+import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
 
 class WorldTransportManager(val world: IonWorld) : TransportHolder {
 	val fluidGraphManager = FluidNetworkManager(this)
+	private val shipFluidOwners = ConcurrentHashMap<BlockKey, FluidNetworkManager>()
 
 	override fun getInputProvider(): IOManager {
 		return world.inputManager
@@ -24,6 +28,22 @@ class WorldTransportManager(val world: IonWorld) : TransportHolder {
 
 	override fun getWorld(): World {
 		return world.world
+	}
+
+	override fun isLocalCoordinate(localVec3i: Vec3i): Boolean {
+		return !shipFluidOwners.containsKey(toBlockKey(localVec3i))
+	}
+
+	fun claimFluidPositions(owner: FluidNetworkManager, positions: Collection<BlockKey>) {
+		positions.forEach { position -> shipFluidOwners[position] = owner }
+	}
+
+	fun releaseFluidPositions(owner: FluidNetworkManager, positions: Collection<BlockKey>) {
+		positions.forEach { position -> shipFluidOwners.remove(position, owner) }
+	}
+
+	fun getFluidManager(position: BlockKey): FluidNetworkManager {
+		return shipFluidOwners[position] ?: fluidGraphManager
 	}
 
 	fun load() {

@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 import net.horizonsend.ion.common.utils.miscellaneous.roundToHundredth
-import net.horizonsend.ion.common.utils.miscellaneous.roundToTenThousanth
 import net.horizonsend.ion.server.features.client.display.ClientDisplayEntities.sendText
 import net.horizonsend.ion.server.features.multiblock.entity.type.fluids.FluidPortMetadata
 import net.horizonsend.ion.server.features.transport.fluids.FluidStack
@@ -14,24 +13,23 @@ import net.horizonsend.ion.server.features.transport.manager.graph.FlowNode
 import net.horizonsend.ion.server.features.transport.manager.graph.FlowTrackingTransportGraph
 import net.horizonsend.ion.server.features.transport.manager.graph.NetworkManager
 import net.horizonsend.ion.server.features.transport.manager.graph.TransportNetwork
+import net.horizonsend.ion.server.features.transport.manager.graph.TransportNetwork.NodeRemovalResult
 import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNode.FluidPort
 import net.horizonsend.ion.server.features.transport.nodes.graph.GraphEdge
-import net.horizonsend.ion.server.miscellaneous.utils.Tasks
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.BlockKey
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.distance
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getRelative
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getX
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getY
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getZ
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getPointsBetween
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
 import net.horizonsend.ion.server.miscellaneous.utils.debugAudience
 import net.kyori.adventure.text.Component
-import org.bukkit.Location
 import org.bukkit.block.BlockFace
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.util.Vector
 import java.util.UUID
 import kotlin.concurrent.withLock
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Suppress("UnstableApiUsage")
@@ -69,9 +67,23 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		getGraphNodes().forEach(FluidNode::populateContents)
 	}
 
+	fun detachNodes(nodes: Collection<FluidNode>) {
+		preSave()
+		val detachedAmount = nodes.sumOf { it.contents.amount }
+		val result = removeNodes(nodes)
+
+		if (result is NodeRemovalResult.RemovedSingle) {
+			networkContents.amount = maxOf(0.0, networkContents.amount - detachedAmount)
+		}
+	}
+
 	private var lastStructureTick: Long = System.currentTimeMillis()
 	private var lastDisplayTick: Long = System.currentTimeMillis()
 	private var lastTransferTick: Long = System.currentTimeMillis()
+
+	fun skipTransferTime(elapsedMillis: Long) {
+		lastTransferTick = minOf(System.currentTimeMillis(), lastTransferTick + elapsedMillis)
+	}
 
 	override fun handleTick() {
 		val now = System.currentTimeMillis()
@@ -138,18 +150,26 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 				if (networkContents.isEmpty()) continue
 
 				val connectedEdge = edges.first()
-				val direction = (connectedEdge as FluidGraphEdge).direction.oppositeFace
+				val localDirection = (connectedEdge as FluidGraphEdge).direction.oppositeFace
+				val globalDirection = manager.transportManager.getGlobalDirection(localDirection)
 
 				val removeAmount = (minOf(getFlow(node.location), node.leakRate, networkContents.amount) * delta)
 				if (removeAmount <= 0) continue
 
-				runCatching { type.getValue().playLeakEffects(manager.transportManager.getWorld(), node, direction) }.onFailure { exception -> exception.printStackTrace() }
+				runCatching {
+					type.getValue().playLeakEffects(manager.transportManager.getWorld(), node, globalDirection)
+				}.onFailure { exception -> exception.printStackTrace() }
 
 				if (networkContents.amount < 0) return@withLock
 				networkContents.amount -= minOf(removeAmount, networkContents.amount)
 
 				// Handle pollution
-				type.getValue().onLeak(manager.transportManager.getWorld(), toVec3i(node.location).getRelative(direction), removeAmount)
+				val globalLocation = manager.transportManager.getGlobalCoordinate(toVec3i(node.location))
+				type.getValue().onLeak(
+					manager.transportManager.getWorld(),
+					globalLocation.getRelative(globalDirection),
+					removeAmount
+				)
 			}
 		}
 
@@ -219,7 +239,7 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		val notRemoved = storage.removeAmount(toRemove)
 		combined.amount -= notRemoved
 
-		val combinationLocation = Location(manager.transportManager.getWorld(), getX(location).toDouble(), getY(location).toDouble(), getZ(location).toDouble())
+		val combinationLocation = node.getGlobalCenter().toLocation(manager.transportManager.getWorld())
 		networkContents.combine(combined, combinationLocation)
 	}
 
@@ -246,7 +266,7 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		if (toAdd <= 0) return
 
 		val toCombine = networkContents.asAmount(toAdd)
-		store.addFluid(toCombine, Location(manager.transportManager.getWorld(), getX(location).toDouble(), getY(location).toDouble(), getZ(location).toDouble()))
+		store.addFluid(toCombine, node.getGlobalCenter().toLocation(manager.transportManager.getWorld()))
 
 		networkContents.amount -= toAdd
 	}
@@ -260,42 +280,48 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 
 		val type = contents.type
 
-		Tasks.async {
-			val world = manager.transportManager.getWorld()
+		val world = manager.transportManager.getWorld()
 
-			for (node in getGraphNodes()) {
-				debugAudience.sendText(node.getCenter().toLocation(manager.transportManager.getWorld()).add(0.0, 0.5, 0.0), Component.text(getFlow(node.location)), 20L)
+		for (node in getGraphNodes()) {
+			debugAudience.sendText(
+				node.getGlobalCenter().toLocation(world).add(0.0, 0.5, 0.0),
+				Component.text(getFlow(node.location)),
+				20L
+			)
 
-				if (node.location in outputs.keys) continue
+			if (node.location in outputs.keys) continue
 
-				val edge = getGraph().outEdges(node).maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue
+			val edge = getGraph().outEdges(node).maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue
 
-				var childDirection = edge.direction
+			var childDirection = manager.transportManager.getGlobalDirection(edge.direction)
 
-				if (getFlow(node.location) <= 0 || edge.netFlow == 0.0) {
-					childDirection = BlockFace.SELF
-				}
+			if (getFlow(node.location) <= 0 || edge.netFlow == 0.0) {
+				childDirection = BlockFace.SELF
+			}
 
-				// Flow from parent
-				val parent = edge.nodeOne as FluidNode
+			// Flow from parent
+			val parent = edge.nodeOne as FluidNode
+			val parentCenter = parent.getGlobalCenter()
+			val padding = 0.5 - PIPE_INTERIOR_PADDING
+			val childCenter = (edge.nodeTwo as FluidNode).getGlobalCenter()
+			val pointCount = maxOf(1, distance(parentCenter, childCenter).roundToInt()) * 3
 
-				edge.getDisplayPoints().forEach { origin ->
-					origin.add(Vector(
-						Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
-						Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
-						Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING)
-					))
+			getPointsBetween(parentCenter, childCenter, pointCount).forEach { origin ->
+				origin.add(Vector(
+					Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
+					Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
+					Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING)
+				))
 
-					val destination =
-						if (childDirection == BlockFace.SELF) origin
-						else Vector(
-							(origin.x + childDirection.direction.x).coerceIn(getX(parent.location) + PIPE_INTERIOR_PADDING..getX(parent.location) + 1.0 - PIPE_INTERIOR_PADDING),
-							(origin.y + childDirection.direction.y).coerceIn(getY(parent.location) + PIPE_INTERIOR_PADDING..getY(parent.location) + 1.0 - PIPE_INTERIOR_PADDING),
-							(origin.z + childDirection.direction.z).coerceIn(getZ(parent.location) + PIPE_INTERIOR_PADDING..getZ(parent.location) + 1.0 - PIPE_INTERIOR_PADDING),
-						)
+				val destination =
+					if (childDirection == BlockFace.SELF) origin
+					else Vector(
+						(origin.x + childDirection.modX).coerceIn(parentCenter.x - padding, parentCenter.x + padding),
+						(origin.y + childDirection.modY).coerceIn(parentCenter.y - padding, parentCenter.y + padding),
+						(origin.z + childDirection.modZ).coerceIn(parentCenter.z - padding, parentCenter.z + padding),
+					)
 
-					type.getValue().displayInPipe(world, origin, destination)
-				}
+				type.getValue().displayInPipe(world, origin, destination)
 			}
 		}
 	}
@@ -315,7 +341,7 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 
 		// Grab a node to use as a location for default params
 		val node = getGraphNodes().firstOrNull() ?: other.getGraphNodes().firstOrNull()
-		val location = node?.getCenter()?.toLocation(manager.transportManager.getWorld())
+		val location = node?.getGlobalCenter()?.toLocation(manager.transportManager.getWorld())
 
 		// Merge amounts if same type
 		otherContents.combine(networkContents, location)
@@ -323,18 +349,14 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 
 	override fun onSplit(children: Collection<TransportNetwork<FluidNode>>) {
 		val contents = networkContents.clone()
-		val availableAmount = contents.amount
-
 		val volume = getVolume()
+		if (volume <= 0.0 || contents.isEmpty()) return
 
 		for (child in children) {
 			val share = (child as FluidNetwork).getVolume() / volume
-			val due = availableAmount * share
-			val toMerge = contents.asAmount(due)
-			child.networkContents.combine(toMerge, null)
-
-			contents.amount -= due.roundToTenThousanth() // Prevent float math weirdness
-			networkContents.amount -= due.roundToTenThousanth() // Prevent float math weirdness
+			val amount = minOf(contents.amount * share, networkContents.amount)
+			child.networkContents.combine(contents.asAmount(amount), null)
+			networkContents.amount -= amount
 		}
 	}
 

@@ -43,7 +43,7 @@ object Water : FluidType(FluidTypeKeys.WATER) {
 	}
 
 	override fun playLeakEffects(world: World, leakingNode: FluidNode, leakingDirection: BlockFace) {
-		val faceCenter = leakingNode.getCenter().add(leakingDirection.direction.multiply(0.5)).toLocation(world)
+		val faceCenter = leakingNode.getGlobalCenter().add(leakingDirection.direction.multiply(0.5)).toLocation(world)
 
 		when (leakingDirection.axis) {
 			Axis.Y -> faceCenter.add(Vector(

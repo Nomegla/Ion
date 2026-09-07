@@ -15,7 +15,7 @@ import org.bukkit.block.data.BlockData
 import kotlin.reflect.KClass
 
 class BlockBasedCacheFactory<T : Any, H: Any> private constructor(private val materialHandlers: Multimap<Material, MaterialHandler<T, H, *>>) {
-	fun cache(block: Block, holder: H): T? {
+	fun cache(block: Block, holder: H, position: BlockKey = toBlockKey(block.x, block.y, block.z)): T? {
 		val type = block.getTypeSafe() ?: return null
 
 		val forMaterial = materialHandlers[type] ?: return null
@@ -23,7 +23,15 @@ class BlockBasedCacheFactory<T : Any, H: Any> private constructor(private val ma
 
 		val filtered = forMaterial.filter { handler -> handler.blockDataClass.isInstance(blockData) }
 
-		return filtered.firstNotNullOfOrNull { handler -> handler.construct(blockData, toBlockKey(block.x, block.y, block.z), holder) }
+		return filtered.firstNotNullOfOrNull { handler -> handler.construct(blockData, position, holder) }
+	}
+
+	fun cache(blockData: BlockData, holder: H, position: BlockKey): T? {
+		val forMaterial = materialHandlers[blockData.material] ?: return null
+
+		val filtered = forMaterial.filter { handler -> handler.blockDataClass.isInstance(blockData) }
+
+		return filtered.firstNotNullOfOrNull { handler -> handler.construct(blockData, position, holder) }
 	}
 
 	class Builder<T : Any, H : Any> {

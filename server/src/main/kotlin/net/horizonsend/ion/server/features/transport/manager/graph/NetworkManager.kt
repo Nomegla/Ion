@@ -8,22 +8,27 @@ import net.horizonsend.ion.server.features.transport.nodes.util.BlockBasedCacheF
 import net.horizonsend.ion.server.features.world.chunk.IonChunk
 import net.horizonsend.ion.server.miscellaneous.registrations.persistence.NamespacedKeys
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.BlockKey
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.Vec3i
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getRelative
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getX
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getY
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getZ
+import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toBlockKey
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
 import net.horizonsend.ion.server.miscellaneous.utils.getBlockIfLoaded
 import org.bukkit.Chunk
 import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
 import org.bukkit.block.BlockFace
+import org.bukkit.block.data.BlockData
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val transportManager: TransportHolder) {
 	abstract val namespacedKey: NamespacedKey
@@ -31,8 +36,23 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 	val referenceDirection = if (transportManager is ShipTransportManager) transportManager.starship.forward else BlockFace.NORTH
 
 	protected abstract val cacheFactory: BlockBasedCacheFactory<N, NetworkManager<N, T>>
+	private val operationLock = ReentrantLock()
+	@Volatile private var paused = false
+	private var pauseDepth = 0
 
-	fun clear() {
+	internal fun <R> withExclusiveAccess(operation: () -> R): R = operationLock.withLock(operation)
+
+	fun pause() = withExclusiveAccess {
+		pauseDepth++
+		paused = true
+	}
+
+	fun resume() = withExclusiveAccess {
+		if (pauseDepth > 0) pauseDepth--
+		paused = pauseDepth > 0
+	}
+
+	fun clear() = withExclusiveAccess {
 		allNetworks.clear()
 		graphUUIDLookup.clear()
 		graphLocationLookup.clear()
@@ -102,10 +122,35 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 		}
 	}
 
-	fun createNode(block: Block): N? = cacheFactory.cache(block, this)
+	fun createNode(block: Block): N? {
+		val localPosition = transportManager.getLocalCoordinate(Vec3i(block.x, block.y, block.z))
+		if (!transportManager.isLocalCoordinate(localPosition)) return null
+		return cacheFactory.cache(block, this, toBlockKey(localPosition))
+	}
+
 	fun createNode(key: BlockKey): N? {
-		val block = getBlockIfLoaded(transportManager.getWorld(), getX(key), getY(key), getZ(key)) ?: return null
-		return createNode(block)
+		val localPosition = toVec3i(key)
+		if (!transportManager.isLocalCoordinate(localPosition)) return null
+		return createNodeUnchecked(key)
+	}
+
+	internal fun createNodeUnchecked(key: BlockKey): N? {
+		val localPosition = toVec3i(key)
+		val globalPosition = transportManager.getGlobalCoordinate(localPosition)
+		val block = getBlockIfLoaded(
+			transportManager.getWorld(),
+			globalPosition.x,
+			globalPosition.y,
+			globalPosition.z
+		) ?: return null
+
+		return cacheFactory.cache(block, this, key)
+	}
+
+	internal fun createNode(key: BlockKey, blockData: BlockData): N? {
+		val localPosition = toVec3i(key)
+		if (!transportManager.isLocalCoordinate(localPosition)) return null
+		return cacheFactory.cache(blockData, this, key)
 	}
 
 	/**
@@ -159,20 +204,20 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 	/**
 	 * WARNING: Limited Use Only!
 	 **/
-	fun registerNewPosition(location: BlockKey, check: (N) -> Boolean = { true }): NodeRegistrationResult {
+	fun registerNewPosition(location: BlockKey, check: (N) -> Boolean = { true }): NodeRegistrationResult = withExclusiveAccess {
 		val graph = getByLocation(location)
 		if (graph != null) {
 			throw IllegalStateException("Attempted to cache point inside registered graph. Concurrent modification? ${toVec3i(location)}")
 		}
 
 		val node = createNode(location)
-		if (node == null) return NodeRegistrationResult.Nothing
-		if (!check(node)) return NodeRegistrationResult.Nothing
+		if (node == null) return@withExclusiveAccess NodeRegistrationResult.Nothing
+		if (!check(node)) return@withExclusiveAccess NodeRegistrationResult.Nothing
 
-		return registerNewNode(node)
+		registerNewNode(node)
 	}
 
-	fun registerNewNode(node: N, flag: Boolean = false): NodeRegistrationResult {
+	fun registerNewNode(node: N, flag: Boolean = false): NodeRegistrationResult = withExclusiveAccess {
 		// Check adjacent graphs to see if any are connected when this one is placed.
 		val adjacentGraphs = node.getPipableDirections().mapNotNullTo(mutableSetOf()) { offset ->
 			val position = getRelative(node.location, offset)
@@ -183,7 +228,7 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 			}
 		}
 
-		return when {
+		when {
 			adjacentGraphs.isEmpty() -> {
 				node.onLoadedIntoNetwork(createNewNetwork(node))
 
@@ -314,7 +359,7 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 		}
 	}
 
-	fun handleChunkUnload(chunk: IonChunk) {
+	fun handleChunkUnload(chunk: IonChunk) = withExclusiveAccess {
 		saveChunk(chunk)
 
 		for (grid in getByChunk(chunk)) {
@@ -322,7 +367,7 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 		}
 	}
 
-	fun saveChunk(chunk: IonChunk) {
+	fun saveChunk(chunk: IonChunk) = withExclusiveAccess {
 		val nodeMap = ConcurrentHashMap<BlockKey, N>()
 
 		for (grid in getByChunk(chunk)) {
@@ -358,22 +403,30 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 	}
 
 	fun tick() {
-		getAllGraphs().forEach { t -> t.tick() }
+		if (paused) return
+
+		withExclusiveAccess {
+			if (paused) return@withExclusiveAccess
+
+			getAllGraphs().forEach { t -> t.tick() }
+		}
 	}
 
-	fun onChunkLoad(chunk: IonChunk) {
-		val data = chunk.inner.persistentDataContainer.get(namespacedKey, PersistentDataType.TAG_CONTAINER) ?: return
-		val nodes = data.get(NamespacedKeys.NODES, PersistentDataType.LIST.dataContainers()) ?: return
+	fun onChunkLoad(chunk: IonChunk) = withExclusiveAccess {
+		val data = chunk.inner.persistentDataContainer.get(namespacedKey, PersistentDataType.TAG_CONTAINER)
+			?: return@withExclusiveAccess
+		val nodes = data.get(NamespacedKeys.NODES, PersistentDataType.LIST.dataContainers())
+			?: return@withExclusiveAccess
 
-		if (nodes.isEmpty()) return
+		if (nodes.isEmpty()) return@withExclusiveAccess
 
 		for (serializedNode in nodes) {
 			val type = serializedNode.get(NamespacedKeys.NODE_TYPE, TransportNetworkNodeTypeKeys.serializer)!!.getValue()
 			val deserialized = type.deserialize(serializedNode, serializedNode.adapterContext)
+			if (!transportManager.isLocalCoordinate(toVec3i(deserialized.location))) continue
 
 			@Suppress("UNCHECKED_CAST")
 			registerNewNode(deserialized as N)
 		}
 	}
 }
-

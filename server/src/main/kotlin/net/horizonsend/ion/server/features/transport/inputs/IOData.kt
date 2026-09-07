@@ -34,9 +34,13 @@ class IOData private constructor (val holder: MultiblockEntity, val inputs: List
 		val inputCreator: (MultiblockEntity) -> T
 	) {
 		fun getRealPos(holder: MultiblockEntity): BlockKey {
+			val direction = if (type == IOType.FLUID) {
+				holder.manager.getTransportManager().getLocalDirection(holder.structureDirection)
+			} else holder.structureDirection
+
 			val newPos = getRelative(
 				origin = holder.localVec3i,
-				forwardFace = holder.structureDirection,
+				forwardFace = direction,
 				right = offsetRight,
 				up = offsetUp,
 				forward = offsetForward

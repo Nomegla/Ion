@@ -62,7 +62,7 @@ object Lava : FluidType(FluidTypeKeys.LAVA) {
 	}
 
 	override fun playLeakEffects(world: World, leakingNode: FluidNode, leakingDirection: BlockFace) {
-		val faceCenter = leakingNode.getCenter().add(leakingDirection.direction.multiply(0.5)).toLocation(world)
+		val faceCenter = leakingNode.getGlobalCenter().add(leakingDirection.direction.multiply(0.5)).toLocation(world)
 
 		if (testRandom(0.05)) world.spawnParticle(Particle.LAVA, faceCenter, 1, 0.0, 0.0, 0.0)
 

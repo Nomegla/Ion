@@ -110,29 +110,34 @@ abstract class StarshipMovement(val starship: ActiveStarship) : TranslationAcces
 			newLocationSet.add(newBlockKey)
 		}
 
-		OptimizedMovement.moveStarship(
-			executionCheck = { ActiveStarships.isActive(starship) },
-			currentWorld = world1,
-			newWorld = world2,
-			oldPositionArray = oldLocationArray,
-			newPositionArray = newLocationArray,
-			blockStateTransform = this::blockStateTransform
-		) {
-			// this part will run on the main thread
-			movePassengers(findPassengers(world1))
+		starship.transportManager.pauseFluidNetworks(world2)
+		try {
+			OptimizedMovement.moveStarship(
+				executionCheck = { ActiveStarships.isActive(starship) },
+				currentWorld = world1,
+				newWorld = world2,
+				oldPositionArray = oldLocationArray,
+				newPositionArray = newLocationArray,
+				blockStateTransform = this::blockStateTransform
+			) {
+				// this part will run on the main thread
+				movePassengers(findPassengers(world1))
 
-			starship.world = world2
-			starship.blocks = newLocationSet
-			moveShipComputers(world2)
-			updateDirectControlCenter()
-			moveDisconnectLocation()
-			starship.calculateMinMax()
-			updateCenter()
-			updateSubsystems(world2)
-			starship.multiblockManager.displace(this)
-			starship.transportManager.displace(this)
+				starship.world = world2
+				starship.blocks = newLocationSet
+				moveShipComputers(world2)
+				updateDirectControlCenter()
+				moveDisconnectLocation()
+				starship.calculateMinMax()
+				updateCenter()
+				updateSubsystems(world2)
+				starship.multiblockManager.displace(this)
+				starship.transportManager.displace(this)
 
-			onComplete()
+				onComplete()
+			}
+		} finally {
+			starship.transportManager.resumeFluidNetworks()
 		}
 
 		if (world1 != world2 && !world2.toString().contains("hyperspace", ignoreCase=true)) {

@@ -13,6 +13,7 @@ import net.horizonsend.ion.server.features.transport.manager.TransportHolder
 import net.horizonsend.ion.server.features.transport.manager.extractors.ExtractorManager
 import net.horizonsend.ion.server.features.transport.manager.extractors.ExtractorManager.Companion.isExtractorData
 import net.horizonsend.ion.server.features.world.chunk.IonChunk
+import net.horizonsend.ion.server.features.world.IonWorld.Companion.ion
 import net.horizonsend.ion.server.miscellaneous.utils.Tasks
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.BlockKey
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toBlockKey
@@ -64,11 +65,9 @@ object NewTransport : IonServerComponent(runAfterTick = true /* Run after tick t
 		val extractorInterval: Long = configuration.extractorConfiguration.extractorTickIntervalMS
 		extractorTickTimer = fixedRateTimer(name = "Extractor Tick", daemon = true, initialDelay = extractorInterval, period = extractorInterval) { tickExtractors() }
 
-		if (ConfigurationFiles.featureFlags().graphTransfer) {
-			if (::graphTickTimer.isInitialized) graphTickTimer.cancel()
-			val graphInterval: Long = configuration.graphBasedConfiguration.tickIntervalMS
-			graphTickTimer = fixedRateTimer(name = "Graph Tick", daemon = true, initialDelay = graphInterval, period = graphInterval) { tickGraphNetworks() }
-		}
+		if (::graphTickTimer.isInitialized) graphTickTimer.cancel()
+		val graphInterval: Long = configuration.graphBasedConfiguration.tickIntervalMS
+		graphTickTimer = fixedRateTimer(name = "Graph Tick", daemon = true, initialDelay = graphInterval, period = graphInterval) { tickGraphNetworks() }
 
 		if (::monitor.isInitialized) monitor.interrupt()
 		monitor = TransportMonitorThread()
@@ -189,8 +188,19 @@ object NewTransport : IonServerComponent(runAfterTick = true /* Run after tick t
 		removeFilter(world, x, y, z)
 	}
 
-	fun handleBlockEvent(world: World, x: Int, y: Int, z: Int, previousData: BlockData, newData: BlockData, player: UUID?) = Tasks.async {
+	fun handleBlockEvent(
+		world: World,
+		x: Int,
+		y: Int,
+		z: Int,
+		previousData: BlockData,
+		newData: BlockData,
+		player: UUID?
+	) = Tasks.async {
 		invalidateCache(world, x, y, z, player)
+
+		val position = toBlockKey(x, y, z)
+		world.ion.transportManager.getFluidManager(position).invalidatePosition(position, newData)
 
 		if (isExtractorData(previousData) && !isExtractorData(newData)) {
 			removeExtractor(world, x, y, z)
@@ -219,13 +229,17 @@ object NewTransport : IonServerComponent(runAfterTick = true /* Run after tick t
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	fun onShipBlockPlace(event: StarshipPlaceBlockEvent) {
 		val block = event.block
-		handleBlockEvent(block.world, block.x, block.y, block.z, Material.AIR.createBlockData(), block.blockData, null)
+		handleBlockEvent(
+			block.world, block.x, block.y, block.z, Material.AIR.createBlockData(), event.newState.blockData, null
+		)
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	fun onShipBlockBreak(event: StarshipBreakBlockEvent) {
 		val block = event.block
-		handleBlockEvent(block.world, block.x, block.y, block.z, event.block.blockData, Material.AIR.createBlockData(), null)
+		handleBlockEvent(
+			block.world, block.x, block.y, block.z, block.blockData, Material.AIR.createBlockData(), null
+		)
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

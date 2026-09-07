@@ -7,8 +7,6 @@ import net.horizonsend.ion.server.features.transport.fluids.FluidType
 import net.horizonsend.ion.server.features.transport.inputs.IOData.BuiltInputData
 import net.horizonsend.ion.server.features.transport.inputs.IOPort.RegisteredMetaDataInput
 import net.horizonsend.ion.server.features.transport.inputs.IOType
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toBlockKey
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
 
 interface FluidStoringMultiblock : Iterable<FluidStorageContainer> {
 	override fun iterator(): Iterator<FluidStorageContainer> {
@@ -41,14 +39,8 @@ interface FluidStoringMultiblock : Iterable<FluidStorageContainer> {
 		val fluidManager = manager.getTransportManager().getGraphTransportManager()
 
 		for (portLocation: BuiltInputData<RegisteredMetaDataInput<FluidPortMetadata>> in ioData.getOfType(IOType.FLUID)) {
-			val localPosition = toBlockKey(fluidManager.transportManager.getLocalCoordinate(toVec3i(portLocation.getRealPos(this))))
 			if (portLocation.get(this)?.metaData?.outputAllowed != true) continue
-
-			val network = fluidManager.getByLocation(localPosition)
-
-			if (network != null) return
-
-			fluidManager.registerNewPosition(localPosition)
+			fluidManager.registerPositionIfAbsent(portLocation.getRealPos(this))
 		}
 	}
 }

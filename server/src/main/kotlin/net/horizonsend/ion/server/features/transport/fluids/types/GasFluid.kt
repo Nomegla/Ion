@@ -15,8 +15,6 @@ import net.horizonsend.ion.server.features.transport.manager.graph.fluid.FluidNo
 import net.horizonsend.ion.server.features.world.IonWorld.Companion.ion
 import net.horizonsend.ion.server.miscellaneous.utils.celsiusToKelvin
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.Vec3i
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getRelative
-import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
 import net.horizonsend.ion.server.miscellaneous.utils.getBlockIfLoaded
 import org.bukkit.Location
 import org.bukkit.Particle
@@ -53,10 +51,8 @@ abstract class GasFluid(
 	}
 
 	override fun playLeakEffects(world: World, leakingNode: FluidNode, leakingDirection: BlockFace) {
-		val openLocation = getRelative(leakingNode.location, leakingDirection)
-
-		val smokeLocation = toVec3i(openLocation)
-			.toCenterVector()
+		val smokeLocation = leakingNode.getGlobalCenter()
+			.add(leakingDirection.direction)
 			.toLocation(world)
 			.add(leakingDirection.direction.multiply(-0.5))
 
