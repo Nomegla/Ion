@@ -93,7 +93,7 @@ abstract class FluidNode(location: BlockKey, type: TransportNodeType<*>, val vol
 	}
 
 	class ReinforcedJunctionPipe(location: BlockKey) : FluidNode(location, TransportNetworkNodeTypeKeys.FLUID_JUNCTION_REINFORCED.getValue(), 10.0) {
-		override val flowCapacity: Double = 30.0
+		override val flowCapacity: Double = 35.0
 
 		override fun isIntact(): Boolean? {
 			val world = getNetwork().manager.transportManager.getWorld()
@@ -107,7 +107,7 @@ abstract class FluidNode(location: BlockKey, type: TransportNodeType<*>, val vol
 	}
 
 	class ReinforcedLinearPipe(location: BlockKey, val axis: Axis) : FluidNode(location, TransportNetworkNodeTypeKeys.FLUID_LINEAR_REINFORCED.getValue(), 5.0), LeakablePipe {
-		override val flowCapacity: Double = 15.0
+		override val flowCapacity: Double = 35.0
 
 		override val leakRate: Double = 1.0
 

@@ -1,10 +1,17 @@
 package net.horizonsend.ion.server.features.multiblock.type.fluid.turbine
 
+import net.horizonsend.ion.server.core.registration.IonRegistryKey
+import net.horizonsend.ion.server.core.registration.keys.FluidTypeKeys
 import net.horizonsend.ion.server.features.multiblock.shape.MultiblockShape
+import net.horizonsend.ion.server.features.transport.fluids.FluidType
 
 object SteamTurbineMultiblock : TurbineMultiblock() {
 	override val maximumSteamConsumptionPerSecond: Double = 7.4
-	override val maximumPowerGenerationPerSecond: Double = 110.0
+	override val maximumPowerGenerationPerSecond: Map<IonRegistryKey<FluidType, out FluidType>, Double> = mapOf(
+		FluidTypeKeys.DENSE_STEAM to 50.0,
+		FluidTypeKeys.SUPER_DENSE_STEAM to 250.0,
+		FluidTypeKeys.ULTRA_DENSE_STEAM to 500.0
+	)
 	override val steamInputCapacity: Double = 1_000_000.0
 
 	override fun MultiblockShape.buildStructure() {
