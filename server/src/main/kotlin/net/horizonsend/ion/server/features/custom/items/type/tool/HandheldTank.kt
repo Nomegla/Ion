@@ -7,7 +7,6 @@ import net.horizonsend.ion.common.extensions.information
 import net.horizonsend.ion.common.utils.text.colors.HEColorScheme
 import net.horizonsend.ion.common.utils.text.ofChildren
 import net.horizonsend.ion.server.core.registration.keys.CustomItemKeys
-import net.horizonsend.ion.server.core.registration.registries.CustomItemRegistry.Companion.customItem
 import net.horizonsend.ion.server.features.client.display.ClientDisplayEntities
 import net.horizonsend.ion.server.features.client.display.HudIcons.FLUID_INFO_ID
 import net.horizonsend.ion.server.features.client.display.modular.display.fluid.FluidDisplayModule.Companion.format
@@ -21,6 +20,7 @@ import net.horizonsend.ion.server.features.custom.items.component.TickReceiverMo
 import net.horizonsend.ion.server.features.custom.items.misc.Wrench.WRENCH_DISPLAY_TICK_INTERVAL
 import net.horizonsend.ion.server.features.custom.items.misc.Wrench.createHudEntity
 import net.horizonsend.ion.server.features.custom.items.misc.Wrench.removeEntity
+import net.horizonsend.ion.server.features.custom.items.misc.Wrench.requestFluidTips
 import net.horizonsend.ion.server.features.custom.items.misc.Wrench.updateHudEntity
 import net.horizonsend.ion.server.features.custom.items.util.ItemFactory
 import net.horizonsend.ion.server.features.multiblock.entity.type.fluids.storage.FluidRestriction
@@ -61,7 +61,7 @@ object HandheldTank : CustomItem(
 		})
 
 		addComponent(CustomComponentTypes.TICK_RECEIVER, TickReceiverModule(WRENCH_DISPLAY_TICK_INTERVAL) { entity, _, _, _ ->
-			giveTips(entity as? Player ?: return@TickReceiverModule)
+			requestFluidTips(entity as? Player ?: return@TickReceiverModule)
 		})
 	}
 
@@ -110,16 +110,16 @@ object HandheldTank : CustomItem(
 		player.information("Deposited {0} {1}", stack.amount, stack.getDisplayName().itemName)
 	}
 
-	private fun giveTips(player: Player) = Tasks.async {
+	internal fun giveTips(player: Player) {
 		val hitResult: RayTraceResult? = player.rayTraceBlocks(7.0, FluidCollisionMode.NEVER)
-		val targeted = hitResult?.hitBlock ?: return@async removeEntity(player)
+		val targeted = hitResult?.hitBlock ?: return removeEntity(player)
 		val targetedLocation = hitResult.hitPosition
 
 		val key = toBlockKey(targeted.x, targeted.y, targeted.z)
 		val inputs = player.world.ion.transportManager.getInputProvider().getPorts(IOType.FLUID, key)
 
 		// Unlikely case for there to multiple in one spot, but only handle 1 if there are
-		val input = inputs.firstOrNull() ?: return@async removeEntity(player)
+		val input = inputs.firstOrNull() ?: return removeEntity(player)
 		val store = input.metaData.connectedStore
 
 		val text = Component.text()
@@ -135,19 +135,6 @@ object HandheldTank : CustomItem(
 		if (ClientDisplayEntities[player.uniqueId]?.get(FLUID_INFO_ID) == null)
 			createHudEntity(player, projectedLocation, text, scale)
 		else updateHudEntity(player, projectedLocation, text, scale)
-
-		Tasks.asyncDelay(WRENCH_DISPLAY_TICK_INTERVAL.toLong()) async2@{
-			if (
-				player.inventory.itemInMainHand.customItem?.key != CustomItemKeys.HANDHELD_TANK &&
-				player.inventory.itemInOffHand.customItem?.key != CustomItemKeys.HANDHELD_TANK
-			) return@async2 removeEntity(player)
-
-			val hitResult: RayTraceResult? = player.rayTraceBlocks(7.0, FluidCollisionMode.NEVER)
-			val targeted = hitResult?.hitBlock ?: return@async2 removeEntity(player)
-			val newKey = toBlockKey(targeted.x, targeted.y, targeted.z)
-
-			if (player.world.ion.inputManager.getPorts(IOType.FLUID, newKey).isEmpty()) return@async2 removeEntity(player)
-		}
 	}
 
 	fun resetColor(itemStack: ItemStack, contents: FluidStack) {

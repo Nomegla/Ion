@@ -23,7 +23,6 @@ import net.horizonsend.ion.server.miscellaneous.utils.coordinates.getPointsBetwe
 import net.horizonsend.ion.server.miscellaneous.utils.coordinates.toVec3i
 import net.horizonsend.ion.server.miscellaneous.utils.debugAudience
 import net.kyori.adventure.text.Component
-import org.bukkit.block.BlockFace
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.util.Vector
@@ -124,7 +123,7 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		if (now - lastDisplayTick > DISPLAY_INTERVAL) {
 			lastDisplayTick = now
 
-			displayFluid(outputs)
+			displayFluid()
 		}
 
 		tickUnpairedPipes(delta)
@@ -357,7 +356,7 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		networkContents.amount -= toAdd - notAdded
 	}
 
-	fun displayFluid(outputs: Long2ObjectOpenHashMap<RegisteredMetaDataInput<FluidPortMetadata>>) {
+	fun displayFluid() {
 		val contents = networkContents
 
 		if (contents.isEmpty()) {
@@ -374,58 +373,44 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 				Component.text(getFlow(node.location)),
 				20L
 			)
+		}
 
-			if (node.location in outputs.keys) continue
-
-			/*
-			val edges = getGraph().outEdges(node).filterIsInstance<FluidGraphEdge>()
-
-			val childDirection: BlockFace = when (edges.size) {
-				0 -> BlockFace.SELF
-				1 -> edges.first().direction
-				else -> {
-					val maxEdge = getGraph().outEdges(node)
-						.maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue // Cast shouldn't matter but handle the case anyways
-
-					maxEdge.direction
-				}
+		// Each physical connection has two directed edges. Keep the one carrying net forward flow,
+		// or just one stationary edge when neither direction has flow. Include every junction branch.
+		val connections = mutableMapOf<Pair<BlockKey, BlockKey>, FluidGraphEdge>()
+		localLock.readLock().withLock {
+			for (edge in getGraphEdges().filterIsInstance<FluidGraphEdge>()) {
+				val one = edge.nodeOne.location
+				val two = edge.nodeTwo.location
+				val key = minOf(one, two) to maxOf(one, two)
+				val previous = connections[key]
+				if (previous == null || edge.netFlow > previous.netFlow) connections[key] = edge
 			}
+		}
 
-			val edge = getGraph().outEdges(node)
-				.maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue // Cast shouldn't matter but handle the case anyways
+		for (edge in connections.values) {
+			// applyFlowResult stores non-negative flow from nodeOne to nodeTwo. The legacy
+			// edge.direction points the other way, so derive movement from the world coordinates.
+			val sourceCenter = (edge.nodeOne as FluidNode).getGlobalCenter()
+			val targetCenter = (edge.nodeTwo as FluidNode).getGlobalCenter()
+			val moving = edge.netFlow > 0.000_001
+			val direction = if (moving) targetCenter.clone().subtract(sourceCenter).normalize() else Vector()
+			val pointCount = maxOf(1, distance(sourceCenter, targetCenter).roundToInt()) * 3
 
-			var childDirection = edge.direction
-			* */
-
-			val edge = getGraph().outEdges(node).maxByOrNull { edge -> (edge as FluidGraphEdge).netFlow } as? FluidGraphEdge ?: continue
-
-			var childDirection = manager.transportManager.getGlobalDirection(edge.direction)
-
-			if (getFlow(node.location) <= 0 || edge.netFlow == 0.0) {
-				childDirection = BlockFace.SELF
-			}
-
-			// Flow from parent
-			val parent = edge.nodeOne as FluidNode
-			val parentCenter = parent.getGlobalCenter()
-			val padding = 0.5 - PIPE_INTERIOR_PADDING
-			val childCenter = (edge.nodeTwo as FluidNode).getGlobalCenter()
-			val pointCount = maxOf(1, distance(parentCenter, childCenter).roundToInt()) * 3
-
-			getPointsBetween(parentCenter, childCenter, pointCount).forEach { origin ->
+			getPointsBetween(sourceCenter, targetCenter, pointCount).forEach { origin ->
 				origin.add(Vector(
 					Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
 					Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING),
 					Random.nextDouble(-PIPE_INTERIOR_PADDING, PIPE_INTERIOR_PADDING)
 				))
 
-				val destination =
-					if (childDirection == BlockFace.SELF) origin
-					else Vector(
-						(origin.x + childDirection.modX).coerceIn(parentCenter.x - padding, parentCenter.x + padding),
-						(origin.y + childDirection.modY).coerceIn(parentCenter.y - padding, parentCenter.y + padding),
-						(origin.z + childDirection.modZ).coerceIn(parentCenter.z - padding, parentCenter.z + padding),
-					)
+				// Clamp to the whole connection, not the source block: particles past the
+				// midpoint must never be pulled backwards toward the source.
+				val destination = origin.clone().add(direction).apply {
+					x = x.coerceIn(minOf(sourceCenter.x, targetCenter.x) - PIPE_INTERIOR_PADDING, maxOf(sourceCenter.x, targetCenter.x) + PIPE_INTERIOR_PADDING)
+					y = y.coerceIn(minOf(sourceCenter.y, targetCenter.y) - PIPE_INTERIOR_PADDING, maxOf(sourceCenter.y, targetCenter.y) + PIPE_INTERIOR_PADDING)
+					z = z.coerceIn(minOf(sourceCenter.z, targetCenter.z) - PIPE_INTERIOR_PADDING, maxOf(sourceCenter.z, targetCenter.z) + PIPE_INTERIOR_PADDING)
+				}
 
 				type.getValue().displayInPipe(world, origin, destination)
 			}

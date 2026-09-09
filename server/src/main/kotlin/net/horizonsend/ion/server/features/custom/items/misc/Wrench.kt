@@ -26,6 +26,7 @@ import net.horizonsend.ion.server.features.custom.items.component.CustomItemComp
 import net.horizonsend.ion.server.features.custom.items.component.Listener.Companion.leftClickListener
 import net.horizonsend.ion.server.features.custom.items.component.Listener.Companion.rightClickListener
 import net.horizonsend.ion.server.features.custom.items.component.TickReceiverModule
+import net.horizonsend.ion.server.features.custom.items.type.tool.HandheldTank
 import net.horizonsend.ion.server.features.custom.items.util.ItemFactory
 import net.horizonsend.ion.server.features.multiblock.MultiblockAccess
 import net.horizonsend.ion.server.features.multiblock.PrePackaged
@@ -45,6 +46,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.Component.newline
 import net.kyori.adventure.text.Component.text
 import net.minecraft.world.entity.Display
+import org.bukkit.Bukkit
 import org.bukkit.Color
 import org.bukkit.FluidCollisionMode
 import org.bukkit.Location
@@ -57,6 +59,8 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.util.RayTraceResult
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 object Wrench : CustomItem(
@@ -67,6 +71,13 @@ object Wrench : CustomItem(
 		.build()
 ) {
 	const val WRENCH_DISPLAY_TICK_INTERVAL = 2
+	private const val HUD_EXPIRY_TICKS = 10L
+	private val pendingTips = ConcurrentHashMap.newKeySet<UUID>()
+	private val fluidHuds = mutableMapOf<UUID, FluidHud>()
+
+	private class FluidHud(val entity: Display.TextDisplay, val worldId: UUID) {
+		var refreshedAt = Bukkit.getCurrentTick()
+	}
 
 	override val customComponents: CustomItemComponentManager = CustomItemComponentManager(serializationManager).apply {
 		addComponent(CustomComponentTypes.LISTENER_PLAYER_INTERACT, rightClickListener(this@Wrench) { event, _, _ ->
@@ -78,7 +89,7 @@ object Wrench : CustomItem(
 		})
 
 		addComponent(CustomComponentTypes.TICK_RECEIVER, TickReceiverModule(WRENCH_DISPLAY_TICK_INTERVAL) { entity, _, _, _ ->
-			giveFluidTips(entity as? Player ?: return@TickReceiverModule)
+			requestFluidTips(entity as? Player ?: return@TickReceiverModule)
 		})
 	}
 
@@ -127,14 +138,36 @@ object Wrench : CustomItem(
 		)
 	}
 
-	private fun giveFluidTips(player: Player) = Tasks.async {
+	/** Coalesce asynchronous item ticks; all targeting and HUD mutations run on the server thread. */
+	fun requestFluidTips(player: Player) {
+		if (!pendingTips.add(player.uniqueId)) return
+		Tasks.sync {
+			try {
+				if (!player.isOnline || player.isDead) return@sync removeEntity(player)
+				when (heldFluidTool(player)) {
+					CustomItemKeys.WRENCH -> giveFluidTips(player)
+					CustomItemKeys.HANDHELD_TANK -> HandheldTank.giveTips(player)
+					else -> removeEntity(player)
+				}
+			} finally {
+				pendingTips.remove(player.uniqueId)
+			}
+		}
+	}
+
+	private fun heldFluidTool(player: Player) = listOf(
+		player.inventory.itemInMainHand.customItem?.key,
+		player.inventory.itemInOffHand.customItem?.key
+	).firstOrNull { it == CustomItemKeys.WRENCH || it == CustomItemKeys.HANDHELD_TANK }
+
+	private fun giveFluidTips(player: Player) {
 		val hitResult: RayTraceResult? = player.rayTraceBlocks(7.0, FluidCollisionMode.NEVER)
-		val targeted = hitResult?.hitBlock ?: return@async removeEntity(player)
+		val targeted = hitResult?.hitBlock ?: return removeEntity(player)
 		val targetedLocation = hitResult.hitPosition
 
 		val key = toBlockKey(targeted.x, targeted.y, targeted.z)
 
-		val (network, localKey) = getFluidNetwork(player, key) ?: return@async removeEntity(player)
+		val (network, localKey) = getFluidNetwork(player, key) ?: return removeEntity(player)
 
 		val fluid = network.networkContents
 
@@ -175,16 +208,6 @@ object Wrench : CustomItem(
 		if (ClientDisplayEntities[player.uniqueId]?.get(FLUID_INFO_ID) == null)
 			createHudEntity(player, projectedLocation, text, scale)
 		else updateHudEntity(player, projectedLocation, text, scale)
-
-		Tasks.asyncDelay(WRENCH_DISPLAY_TICK_INTERVAL.toLong()) async2@{
-			if (player.inventory.itemInMainHand.customItem?.key != CustomItemKeys.WRENCH) return@async2 removeEntity(player)
-
-			val hitResult: RayTraceResult? = player.rayTraceBlocks(7.0, FluidCollisionMode.NEVER)
-			val targeted = hitResult?.hitBlock ?: return@async2 removeEntity(player)
-			val key = toBlockKey(targeted.x, targeted.y, targeted.z)
-
-			if (getFluidNetwork(player, key) == null) return@async2 removeEntity(player)
-		}
 	}
 
 	private fun getFluidNetwork(player: Player, globalPosition: BlockKey): Pair<FluidNetwork, BlockKey>? {
@@ -196,11 +219,36 @@ object Wrench : CustomItem(
 	}
 
 	fun removeEntity(player: Player) {
-		val entity = ClientDisplayEntities[player.uniqueId]?.remove(FLUID_INFO_ID) ?: return
-		ClientDisplayEntities.deleteDisplayEntityPacket(player.minecraft, entity)
+		val hud = fluidHuds.remove(player.uniqueId)
+		val entity = ClientDisplayEntities[player.uniqueId]?.remove(FLUID_INFO_ID)
+		if (!player.isOnline) return
+		if (entity != null) ClientDisplayEntities.deleteDisplayEntityPacket(player.minecraft, entity)
+		if (hud != null && hud.entity !== entity) ClientDisplayEntities.deleteDisplayEntityPacket(player.minecraft, hud.entity)
+	}
+
+	/** Keep a reference to this exact entity so even an overwritten map entry can be cleaned up. */
+	private fun scheduleHudExpiry(player: Player, hud: FluidHud) {
+		val remainingTicks = maxOf(1L, HUD_EXPIRY_TICKS - (Bukkit.getCurrentTick() - hud.refreshedAt))
+		Tasks.syncDelay(remainingTicks) {
+			val current = fluidHuds[player.uniqueId]
+			val expired = current !== hud || ClientDisplayEntities[player.uniqueId]?.get(FLUID_INFO_ID) !== hud.entity ||
+				!player.isOnline || player.isDead || player.world.uid != hud.worldId || heldFluidTool(player) == null ||
+				Bukkit.getCurrentTick() - hud.refreshedAt >= HUD_EXPIRY_TICKS
+
+			if (expired) {
+				if (current === hud) removeEntity(player)
+				else if (player.isOnline) ClientDisplayEntities.deleteDisplayEntityPacket(player.minecraft, hud.entity)
+				return@syncDelay
+			}
+
+			scheduleHudExpiry(player, hud)
+		}
 	}
 
 	fun createHudEntity(player: Player, location: Location, info: Component, scale: Float) {
+		removeEntity(player)
+		if (!player.isOnline) return
+		val displays = ClientDisplayEntities[player.uniqueId] ?: return
 		val entity = ClientDisplayEntities.createTextEntity(
 			location,
 			info,
@@ -210,12 +258,19 @@ object Wrench : CustomItem(
 			seeThrough = true,
 		)
 
-		ClientDisplayEntities[player.uniqueId]?.set(FLUID_INFO_ID, entity)
+		val hud = FluidHud(entity, player.world.uid)
+		fluidHuds[player.uniqueId] = hud
+		displays[FLUID_INFO_ID] = entity
+		scheduleHudExpiry(player, hud)
 		ClientDisplayEntities.sendEntityPacket(player, entity)
 	}
 
 	fun updateHudEntity(player: Player, location: Location, info: Component, scale: Float) {
-		val nmsEntity = ClientDisplayEntities[player.uniqueId]?.get(FLUID_INFO_ID) as? Display.TextDisplay ?: return
+		val hud = fluidHuds[player.uniqueId]
+		if (hud == null || hud.worldId != player.world.uid || ClientDisplayEntities[player.uniqueId]?.get(FLUID_INFO_ID) !== hud.entity) {
+			return createHudEntity(player, location, info, scale)
+		}
+		val nmsEntity = hud.entity
 
 		nmsEntity.text = PaperAdventure.asVanilla(info)
 
@@ -231,5 +286,6 @@ object Wrench : CustomItem(
 
 		ClientDisplayEntities.moveDisplayEntityPacket(player.minecraft, nmsEntity, location.x, location.y, location.z)
 		ClientDisplayEntities.transformDisplayEntityPacket(player, nmsEntity, transformation)
+		hud.refreshedAt = Bukkit.getCurrentTick()
 	}
 }
