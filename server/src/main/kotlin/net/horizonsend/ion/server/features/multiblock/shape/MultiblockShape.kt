@@ -27,6 +27,7 @@ import net.horizonsend.ion.server.miscellaneous.utils.isDoor
 import net.horizonsend.ion.server.miscellaneous.utils.isFroglight
 import net.horizonsend.ion.server.miscellaneous.utils.isGlass
 import net.horizonsend.ion.server.miscellaneous.utils.isGlassPane
+import net.horizonsend.ion.server.miscellaneous.utils.isLog
 import net.horizonsend.ion.server.miscellaneous.utils.isPipedInventory
 import net.horizonsend.ion.server.miscellaneous.utils.isRedstoneLamp
 import net.horizonsend.ion.server.miscellaneous.utils.isSlab
@@ -35,6 +36,7 @@ import net.horizonsend.ion.server.miscellaneous.utils.isStairs
 import net.horizonsend.ion.server.miscellaneous.utils.isTerracotta
 import net.horizonsend.ion.server.miscellaneous.utils.isTrapdoor
 import net.horizonsend.ion.server.miscellaneous.utils.isWall
+import net.horizonsend.ion.server.miscellaneous.utils.isWood
 import net.horizonsend.ion.server.miscellaneous.utils.isWool
 import net.minecraft.world.level.block.AbstractFurnaceBlock
 import org.bukkit.Material
@@ -380,6 +382,11 @@ class MultiblockShape {
 
 		fun anyStairs(edit: BlockRequirement.() -> Unit = { setExample(Material.STONE_BRICK_STAIRS.createBlockData()) }) =
 			filteredTypes("any stair block", edit) { it.isStairs }
+
+		fun anyWoodOrLog() = filteredTypes(
+			"any wood or log",
+			{ setExample(Material.PALE_OAK_WOOD.createBlockData()) }
+		) { it.isWood || it.isLog }
 
 		fun anyWall(edit: BlockRequirement.() -> Unit = { setExample(Material.STONE_BRICK_WALL.createBlockData()) }) =
 			filteredTypes("any wall block", edit) { it.isWall }

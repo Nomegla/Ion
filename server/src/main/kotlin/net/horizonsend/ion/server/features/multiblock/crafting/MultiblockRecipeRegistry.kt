@@ -844,6 +844,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 	}
 
 	fun registerChemicalProcessorRecipes() {
+		/* Test-only recipe intentionally disabled.
 		register(MultiblockRecipeKeys.TEST_CHEMICAL_PROCESSOR, ChemicalProcessorRecipe(
 			key = MultiblockRecipeKeys.TEST_CHEMICAL_PROCESSOR,
 			itemRequirement = MaterialRequirement(Material.IRON_INGOT),
@@ -855,6 +856,7 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 			itemResult = ResultHolder.of(ItemResult.simpleResult(CustomItemKeys.CIRCUITRY.getValue().constructItemStack())),
 			0
 		))
+		*/
 		register(MultiblockRecipeKeys.SABATIER_METHANE, ChemicalProcessorRecipe(
 			key = MultiblockRecipeKeys.SABATIER_METHANE,
 			itemRequirement = MaterialRequirement(Material.IRON_INGOT),
@@ -869,6 +871,19 @@ class MultiblockRecipeRegistry : Registry<MultiblockRecipe<*>>(RegistryKeys.MULT
 
 			itemResult = ResultHolder.of(ItemResult.simpleResult(Material.IRON_INGOT)),
 			0
+		))
+		register(MultiblockRecipeKeys.FERTILIZER, ChemicalProcessorRecipe(
+			key = MultiblockRecipeKeys.FERTILIZER,
+			itemRequirement = MaterialRequirement(Material.BONE_MEAL),
+
+			fluidRequirementOne = FluidRecipeRequirement("primaryin", FluidTypeKeys.WATER, 2.0),
+			fluidRequirementTwo = FluidRecipeRequirement("secondaryin", FluidTypeKeys.NITROGEN, 3.0),
+
+			fluidResultOne = FluidResult("primaryout", FluidStack(FluidTypeKeys.FERTILIZER, 1.0)),
+			fluidResultTwo = null,
+			fluidResultPollutionResult = null,
+			itemResult = null,
+			resultSleepTicks = 0
 		))
 	}
 

@@ -23,7 +23,8 @@ class RegistryKeyConsumerInputButton<T : Any>(
 	buttonDescription: String,
 	icon: GuiItem,
 	defaultValue: IonRegistryKey<T, out T>?,
-	private val searchTermProvider: (IonRegistryKey<T, out T>) -> Collection<String> = { listOf(it.key) }
+	private val searchTermProvider: (IonRegistryKey<T, out T>) -> Collection<String> = { listOf(it.key) },
+	private val displayNameProvider: (IonRegistryKey<T, out T>) -> Component = { text(it.toString()) }
 ) : SupplierConsumerButton<IonRegistryKey<T, out T>?>(valueSupplier, valueConsumer, name, buttonDescription, icon, defaultValue) {
 	override fun getSecondLine(player: Player): Component {
 		val value = getState(player)
@@ -36,6 +37,8 @@ class RegistryKeyConsumerInputButton<T : Any>(
 			searchTermProvider,
 			inputDescription,
 			backButtonHandler = { parent.openGui() },
+			componentTransformer = displayNameProvider,
+			itemTransformer = { GuiItem.RIGHT.makeItem(displayNameProvider(it)) },
 			handler = { _, result ->
 				newValueConsumer.accept(result)
 				parent.openGui()

@@ -145,14 +145,14 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 			y(-1) {
 				x(-4).anyStairs(PrepackagedPreset.stairs(RelativeFace.RIGHT, Bisected.Half.TOP, shape = Stairs.Shape.STRAIGHT))
 				x(-3).ironBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(3).ironBlock()
 				x(4).anyStairs(PrepackagedPreset.stairs(RelativeFace.LEFT, Bisected.Half.TOP, shape = Stairs.Shape.STRAIGHT))
 			}
 			y(0) {
 				x(-4).ironBlock()
 				x(-3).ironBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(3).ironBlock()
 				x(4).ironBlock()
 			}
@@ -161,7 +161,7 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 				x(-3).ironBlock()
 				x(-2).ironBlock()
 				x(-1).ironBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(1).ironBlock()
 				x(2).ironBlock()
 				x(3).ironBlock()
@@ -169,7 +169,7 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 			}
 			y(2) {
 				x(-2).titaniumBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(2).titaniumBlock()
 			}
 			y(3) {
@@ -261,31 +261,31 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 		z(4) {
 			y(-1) {
 				x(-4).anyStairs(PrepackagedPreset.stairs(RelativeFace.RIGHT, Bisected.Half.TOP, shape = Stairs.Shape.STRAIGHT))
-				x(-2).type(Material.PALE_OAK_WOOD)
-				x(2).type(Material.PALE_OAK_WOOD)
+				x(-2).anyWoodOrLog()
+				x(2).anyWoodOrLog()
 				x(4).anyStairs(PrepackagedPreset.stairs(RelativeFace.LEFT, Bisected.Half.TOP, shape = Stairs.Shape.STRAIGHT))
 			}
 			y(0) {
 				x(-4).anyPipedInventory()
-				x(-2).type(Material.PALE_OAK_WOOD)
-				x(2).type(Material.PALE_OAK_WOOD)
+				x(-2).anyWoodOrLog()
+				x(2).anyWoodOrLog()
 				x(4).anyPipedInventory()
 			}
 			y(1) {
 				x(-4).anyStairs(PrepackagedPreset.stairs(RelativeFace.RIGHT, Bisected.Half.BOTTOM, shape = Stairs.Shape.STRAIGHT))
 				x(-3).ironBlock()
-				x(-2).type(Material.PALE_OAK_WOOD)
+				x(-2).anyWoodOrLog()
 				x(-1).ironBlock()
 				x(0).ironBlock()
 				x(1).ironBlock()
-				x(2).type(Material.PALE_OAK_WOOD)
+				x(2).anyWoodOrLog()
 				x(3).ironBlock()
 				x(4).anyStairs(PrepackagedPreset.stairs(RelativeFace.LEFT, Bisected.Half.BOTTOM, shape = Stairs.Shape.STRAIGHT))
 			}
 			y(2) {
 				x(-3).titaniumBlock()
-				x(-2).type(Material.PALE_OAK_WOOD)
-				x(2).type(Material.PALE_OAK_WOOD)
+				x(-2).anyWoodOrLog()
+				x(2).anyWoodOrLog()
 				x(3).titaniumBlock()
 			}
 			y(3) {
@@ -381,14 +381,14 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 			y(-1) {
 				x(-4).anyStairs(PrepackagedPreset.stairs(RelativeFace.RIGHT, Bisected.Half.TOP, shape = Stairs.Shape.STRAIGHT))
 				x(-3).ironBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(3).ironBlock()
 				x(4).anyStairs(PrepackagedPreset.stairs(RelativeFace.LEFT, Bisected.Half.TOP, shape = Stairs.Shape.STRAIGHT))
 			}
 			y(0) {
 				x(-4).ironBlock()
 				x(-3).ironBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(3).ironBlock()
 				x(4).ironBlock()
 			}
@@ -397,7 +397,7 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 				x(-3).ironBlock()
 				x(-2).ironBlock()
 				x(-1).ironBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(1).ironBlock()
 				x(2).ironBlock()
 				x(3).ironBlock()
@@ -405,7 +405,7 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 			}
 			y(2) {
 				x(-2).titaniumBlock()
-				x(0).type(Material.PALE_OAK_WOOD)
+				x(0).anyWoodOrLog()
 				x(2).titaniumBlock()
 			}
 			y(3) {
@@ -596,6 +596,11 @@ object ChemicalProcessorMultiblock : Multiblock(), EntityMultiblock<ChemicalProc
 					inputDescription = text("Enter Key"),
 					icon = GuiItem.LIST,
 					defaultValue = null,
+					displayNameProvider = { key ->
+						text(key.key.split('_').joinToString(" ") { word ->
+							word.lowercase().replaceFirstChar(Char::titlecase)
+						})
+					},
 					searchTermProvider = { key ->
 						key as IonRegistryKey<MultiblockRecipe<*>, out MultiblockRecipe<ChemicalProcessorEnvironment>>
 						val recipe: ChemicalProcessorRecipe = key.getValue() as ChemicalProcessorRecipe

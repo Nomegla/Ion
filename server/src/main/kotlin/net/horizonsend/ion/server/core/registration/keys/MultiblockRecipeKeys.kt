@@ -385,4 +385,5 @@ object MultiblockRecipeKeys : KeyRegistry<MultiblockRecipe<*>>(RegistryKeys.MULT
 
 	val TEST_CHEMICAL_PROCESSOR = registerTypedKey<ChemicalProcessorRecipe>("TEST_CHEMICAL_PROCESSOR")
 	val SABATIER_METHANE = registerTypedKey<ChemicalProcessorRecipe>("SABATIER_METHANE")
+	val FERTILIZER = registerTypedKey<ChemicalProcessorRecipe>("FERTILIZER")
 }

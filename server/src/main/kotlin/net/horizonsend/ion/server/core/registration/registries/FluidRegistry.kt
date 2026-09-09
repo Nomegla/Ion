@@ -12,6 +12,7 @@ import net.horizonsend.ion.server.features.transport.fluids.FluidType
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidCategory
 import net.horizonsend.ion.server.features.transport.fluids.properties.FluidProperty
 import net.horizonsend.ion.server.features.transport.fluids.types.AtmosphericGasFluid
+import net.horizonsend.ion.server.features.transport.fluids.types.Fertilizer
 import net.horizonsend.ion.server.features.transport.fluids.types.GasFluid
 import net.horizonsend.ion.server.features.transport.fluids.types.Lava
 import net.horizonsend.ion.server.features.transport.fluids.types.Steam
@@ -122,6 +123,7 @@ class FluidTypeRegistry : Registry<FluidType>(RegistryKeys.FLUID_TYPE) {
 		))
 
 		register(FluidTypeKeys.WATER, Water)
+		register(FluidTypeKeys.FERTILIZER, Fertilizer)
 		register(FluidTypeKeys.LAVA, Lava)
 
 		register(FluidTypeKeys.LOW_PRESSURE_STEAM, object : GasFluid(

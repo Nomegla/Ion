@@ -362,19 +362,19 @@ object BoilerMultiblockItemFuel : BoilerMultiblock<ItemBoilerEntity>() {
 			}
 			y(0) {
 				x(-3).anyWall()
-				x(-2).anyCustomBlockOrMaterial(
-					listOf(CustomBlockKeys.REDSTONE_CONTROL_PORT),
-					listOf(Material.MUD_BRICKS),
-					"redstone control port or mud bricks",
-				) { setExample(CustomBlockKeys.REDSTONE_CONTROL_PORT.getValue().blockData) }
+				x(-2).anyCustomBlock(
+					CustomBlockKeys.REDSTONE_CONTROL_PORT,
+					CustomBlockKeys.REFRACTORY_BRICKS,
+					alias = "redstone control port or refractory bricks",
+				) { setExample(CustomBlockKeys.REFRACTORY_BRICKS.getValue().blockData) }
 				x(-1).anyGlassPane(PrepackagedPreset.pane(RelativeFace.FORWARD, RelativeFace.RIGHT, RelativeFace.LEFT))
 				x(0).anyGlass()
 				x(1).anyGlassPane(PrepackagedPreset.pane(RelativeFace.FORWARD, RelativeFace.RIGHT, RelativeFace.LEFT))
-				x(2).anyCustomBlockOrMaterial(
-					listOf(CustomBlockKeys.REDSTONE_CONTROL_PORT),
-					listOf(Material.MUD_BRICKS),
-					"redstone control port or mud bricks",
-				) { setExample(Material.MUD_BRICKS) }
+				x(2).anyCustomBlock(
+					CustomBlockKeys.REDSTONE_CONTROL_PORT,
+					CustomBlockKeys.REFRACTORY_BRICKS,
+					alias = "redstone control port or refractory bricks",
+				) { setExample(CustomBlockKeys.REFRACTORY_BRICKS.getValue().blockData) }
 				x(3).anyWall()
 			}
 			y(1) {
