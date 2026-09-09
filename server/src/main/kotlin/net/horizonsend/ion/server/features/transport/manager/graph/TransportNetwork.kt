@@ -218,6 +218,7 @@ abstract class TransportNetwork<N: TransportNode>(val uuid: UUID, open val manag
 	open fun onNodeAdded(node: N) {}
 	open fun onEdgeConnected(edge: GraphEdge) {}
 	open fun onSplit(children: Collection<TransportNetwork<N>>) {}
+	open fun canMergeWith(other: TransportNetwork<N>): Boolean = true
 	open fun onMergedInto(other: TransportNetwork<N>) {}
 
 	/**

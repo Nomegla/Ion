@@ -206,18 +206,105 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 	}
 
 	private fun tickMultiblockInputs(inputs: Long2ObjectOpenHashMap<RegisteredMetaDataInput<FluidPortMetadata>>, delta: Double) {
-		inputs.forEach { entry -> addToMultiblocks(entry.key, entry.value, delta) }
+		if (networkContents.isEmpty()) return
+
+		val candidates = mutableListOf<FluidTransferCandidate>()
+		inputs.forEach { entry ->
+			val location = entry.key
+			val port = entry.value
+			if (!port.metaData.inputAllowed) return@forEach
+
+			val node = getNodeAtLocation(location) as? FluidPort ?: return@forEach
+			val store = port.metaData.connectedStore
+			if (!store.canAdd(networkContents)) return@forEach
+
+			val limit = minOf(
+				store.getRemainingRoom(),
+				node.additionCapacity * delta,
+				getSinkFlow(location) * delta
+			)
+
+			if (limit > 0.0) candidates.add(FluidTransferCandidate(location, port, limit))
+		}
+
+		val allocations = fairTransferAmounts(candidates.map(FluidTransferCandidate::limit), networkContents.amount)
+		candidates.forEachIndexed { index, candidate ->
+			addToMultiblocks(candidate.location, candidate.port, allocations[index])
+		}
 	}
 
 	private fun tickMultiblockOutputs(outputs: Long2ObjectOpenHashMap<RegisteredMetaDataInput<FluidPortMetadata>>, delta: Double) {
-		outputs.forEach { entry -> depositToNetwork(entry.key, entry.value, delta) }
+		val remainingRoom = maxOf(0.0, getVolume() - networkContents.amount)
+		if (remainingRoom <= 0.0) return
+
+		val candidates = mutableListOf<FluidTransferCandidate>()
+		outputs.forEach { entry ->
+			val location = entry.key
+			val port = entry.value
+			if (!port.metaData.outputAllowed) return@forEach
+
+			val node = getNodeAtLocation(location) as? FluidPort ?: return@forEach
+			val contents = port.metaData.connectedStore.getContents()
+			if (contents.isEmpty()) return@forEach
+			if (!networkContents.isEmpty() && !networkContents.canCombine(contents)) return@forEach
+
+			val limit = minOf(
+				contents.amount,
+				node.removalCapacity * delta,
+				getSourceFlow(location) * delta
+			)
+
+			if (limit > 0.0) candidates.add(FluidTransferCandidate(location, port, limit))
+		}
+
+		val compatibleCandidates = if (networkContents.isNotEmpty()) candidates else {
+			val selectedType = candidates
+				.groupBy { it.port.metaData.connectedStore.getContents().type }
+				.maxByOrNull { (_, transfers) -> transfers.sumOf(FluidTransferCandidate::limit) }
+				?.key
+
+			candidates.filter { it.port.metaData.connectedStore.getContents().type == selectedType }
+		}
+
+		val allocations = fairTransferAmounts(compatibleCandidates.map(FluidTransferCandidate::limit), remainingRoom)
+		compatibleCandidates.forEachIndexed { index, candidate ->
+			depositToNetwork(candidate.location, candidate.port, allocations[index])
+		}
 	}
 
-	private fun depositToNetwork(location: BlockKey, port: RegisteredMetaDataInput<FluidPortMetadata>, delta: Double) {
+	private data class FluidTransferCandidate(
+		val location: BlockKey,
+		val port: RegisteredMetaDataInput<FluidPortMetadata>,
+		val limit: Double
+	)
+
+	private fun fairTransferAmounts(limits: List<Double>, available: Double): DoubleArray {
+		val allocations = DoubleArray(limits.size)
+		var amountLeft = minOf(available, limits.sum())
+		val remaining = limits.indices.sortedBy(limits::get).toMutableList()
+
+		while (remaining.isNotEmpty() && amountLeft > 0.0) {
+			val equalShare = amountLeft / remaining.size
+			val limitedIndex = remaining.first()
+
+			if (limits[limitedIndex] <= equalShare) {
+				allocations[limitedIndex] = limits[limitedIndex]
+				amountLeft -= limits[limitedIndex]
+				remaining.removeAt(0)
+				continue
+			}
+
+			remaining.forEach { allocations[it] = equalShare }
+			break
+		}
+
+		return allocations
+	}
+
+	private fun depositToNetwork(location: BlockKey, port: RegisteredMetaDataInput<FluidPortMetadata>, amount: Double) {
+		if (amount <= 0.0) return
 		if (!port.metaData.outputAllowed) return
 		val node = getNodeAtLocation(location) as? FluidPort ?: return
-
-		val removalRate = node.removalCapacity
 
 		val remainingRoom = maxOf(0.0, getVolume() - networkContents.amount)
 		if (remainingRoom <= 0.0) return
@@ -229,12 +316,7 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 
 		if (!networkContents.isEmpty() && storageContents.type != networkContents.type) return
 
-		val toRemove = minOf(
-			removalRate * delta,
-			(getVolume() - networkContents.amount),
-			storage.getContents().amount,
-			getFlow(location) * delta
-		)
+		val toRemove = minOf(amount, remainingRoom, storage.getContents().amount)
 
 		if (toRemove <= 0) return
 
@@ -250,13 +332,12 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		networkContents.combine(combined, combinationLocation)
 	}
 
-	private fun addToMultiblocks(location: BlockKey, ioPort: RegisteredMetaDataInput<FluidPortMetadata>, delta: Double) {
+	private fun addToMultiblocks(location: BlockKey, ioPort: RegisteredMetaDataInput<FluidPortMetadata>, amount: Double) {
+		if (amount <= 0.0) return
 		if (networkContents.isEmpty()) return
 		if (!ioPort.metaData.inputAllowed) return
 
 		val node = getNodeAtLocation(location) as? FluidPort ?: return
-
-		val additionRate = node.additionCapacity
 
 		val store = ioPort.metaData.connectedStore
 
@@ -266,16 +347,14 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 
 		val room = store.capacity - store.getContents().amount
 		val availableToMove = networkContents.amount
-		val flowLimit = getFlow(location) * delta
-		val additionLimit = additionRate * delta
-		val toAdd = minOf(room, availableToMove, flowLimit, additionLimit)
+		val toAdd = minOf(room, availableToMove, amount)
 
 		if (toAdd <= 0) return
 
 		val toCombine = networkContents.asAmount(toAdd)
-		store.addFluid(toCombine, node.getGlobalCenter().toLocation(manager.transportManager.getWorld()))
+		val notAdded = store.addFluid(toCombine, node.getGlobalCenter().toLocation(manager.transportManager.getWorld()))
 
-		networkContents.amount -= toAdd
+		networkContents.amount -= toAdd - notAdded
 	}
 
 	fun displayFluid(outputs: Long2ObjectOpenHashMap<RegisteredMetaDataInput<FluidPortMetadata>>) {
@@ -359,6 +438,11 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		return pdc
 	}
 
+	override fun canMergeWith(other: TransportNetwork<FluidNode>): Boolean {
+		other as? FluidNetwork ?: return false
+		return networkContents.isEmpty() || other.networkContents.isEmpty() || networkContents.canCombine(other.networkContents)
+	}
+
 	override fun onMergedInto(other: TransportNetwork<FluidNode>) {
 		if (networkContents.isEmpty()) return
 		other as FluidNetwork
@@ -409,6 +493,15 @@ class FluidNetwork(uuid: UUID, override val manager: NetworkManager<FluidNode, T
 		return ioData.metaData.outputAllowed
 			&& (networkContents.canCombine(container.getContents()) || networkContents.isEmpty())
 			&& container.getContents().amount > 0.0
+	}
+
+	override fun getSourceCapacity(node: FluidNode): Double {
+		return (node as? FluidPort)?.removalCapacity ?: super.getSourceCapacity(node)
+	}
+
+	override fun getSinkCapacity(node: FluidNode): Double {
+		if (node is FluidNode.LeakablePipe && leakingPipes.contains(node.location)) return node.leakRate
+		return (node as? FluidPort)?.additionCapacity ?: super.getSinkCapacity(node)
 	}
 
 	override fun getFlowCapacity(node: FluidNode): Double {

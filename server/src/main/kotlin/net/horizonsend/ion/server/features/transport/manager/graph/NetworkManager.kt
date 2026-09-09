@@ -193,6 +193,7 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 
 		val nodeAtPosition = graph.getNodeAtLocation(location) ?: return NodeRegistrationResult.Nothing
 		if (!nodeAtPosition.getPipableDirections().contains(offset)) return NodeRegistrationResult.Nothing
+		if (!graph.canMergeWith(discoveringNetwork) || !discoveringNetwork.canMergeWith(graph)) return NodeRegistrationResult.Nothing
 
 		// If this point is occupied by another graph, and they have not merged yet, merge them.
 		val toCombine = listOf(graph, discoveringNetwork)
@@ -228,25 +229,32 @@ abstract class NetworkManager<N : TransportNode, T: TransportNetwork<N>>(val tra
 			}
 		}
 
+		val compatibleAdjacentGraphs = adjacentGraphs
+			.sortedByDescending { it.getGraphNodes().size }
+			.fold(mutableSetOf<T>()) { compatible, candidate ->
+				if (compatible.all { it.canMergeWith(candidate) && candidate.canMergeWith(it) }) compatible.add(candidate)
+				compatible
+			}
+
 		when {
-			adjacentGraphs.isEmpty() -> {
+			compatibleAdjacentGraphs.isEmpty() -> {
 				node.onLoadedIntoNetwork(createNewNetwork(node))
 
 				NodeRegistrationResult.CreatedNewNode(node)
 			}
-			adjacentGraphs.size == 1 -> {
-				val adjacent = adjacentGraphs.first()
+			compatibleAdjacentGraphs.size == 1 -> {
+				val adjacent = compatibleAdjacentGraphs.first()
 				adjacent.addNode(node)
 				node.onLoadedIntoNetwork(adjacent)
 
 				NodeRegistrationResult.CreatedNewNode(node)
 			}
 			else -> {
-				val new = combineGraphs(adjacentGraphs)
+				val new = combineGraphs(compatibleAdjacentGraphs)
 				new.addNode(node)
 				node.onLoadedIntoNetwork(new)
 
-				NodeRegistrationResult.CombinedGraphs(adjacentGraphs)
+				NodeRegistrationResult.CombinedGraphs(compatibleAdjacentGraphs)
 			}
 		}
 	}
