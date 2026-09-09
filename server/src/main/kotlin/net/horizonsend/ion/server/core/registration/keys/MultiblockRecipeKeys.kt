@@ -383,7 +383,7 @@ object MultiblockRecipeKeys : KeyRegistry<MultiblockRecipe<*>>(RegistryKeys.MULT
 	val STONECUTTING_DARK_OAK_WOOD_STRIPPED_DARK_OAK_WOOD_STRIPPED = registerTypedKey<AutoMasonRecipe>("STONECUTTING_DARK_OAK_WOOD_STRIPPED_DARK_OAK_WOOD_STRIPPED")
 	val STONECUTTING_MANGROVE_WOOD_STRIPPED_MANGROVE_WOOD_STRIPPED = registerTypedKey<AutoMasonRecipe>("STONECUTTING_MANGROVE_WOOD_STRIPPED_MANGROVE_WOOD_STRIPPED")
 
-	val TEST_CHEMICAL_PROCESSOR = registerTypedKey<ChemicalProcessorRecipe>("TEST_CHEMICAL_PROCESSOR")
+	// val TEST_CHEMICAL_PROCESSOR = registerTypedKey<ChemicalProcessorRecipe>("TEST_CHEMICAL_PROCESSOR")
 	val SABATIER_METHANE = registerTypedKey<ChemicalProcessorRecipe>("SABATIER_METHANE")
 	val FERTILIZER = registerTypedKey<ChemicalProcessorRecipe>("FERTILIZER")
 }
